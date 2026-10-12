@@ -15,9 +15,24 @@ issues enabled and an unarchived state. For
 - Topics: `home-assistant`, `hacs`, `custom-integration`, `weather`, `thailand`, `tmd`.
 - Visibility: public; issues enabled; repository not archived.
 
-These are GitHub settings, not fields a local JSON file can apply. Their actual
-values could not be read through the environment's blocked GitHub REST endpoint.
+These are GitHub settings, not fields a local JSON file or Git commit can apply.
 The HACS workflow checks them without ignoring failures.
+
+### Fixing the HACS topics check
+
+If HACS reports `The repository has no valid topics`, open the repository's
+**About** section, select its gear icon, and add `weather`, `thailand`, and `tmd`
+as topics. Save, then rerun the failed HACS workflow from GitHub Actions.
+HACS filters generic topics such as `home-assistant` and `hacs`; those labels alone
+do not satisfy the check. Keep descriptive topics as well.
+
+The GitHub API currently confirms that this repository has no topics. Reading
+metadata works, but the integration credential cannot update topics: GitHub
+returns `403: Resource not accessible by integration`. Repository write access
+for Git pushes does not establish permission to edit repository settings. A
+repository owner or another suitably authorized user must add the topics through
+GitHub or grant an API credential the required permission. Recommitting files
+cannot change this metadata, and the validation check should remain enabled.
 
 ## Publish a version
 

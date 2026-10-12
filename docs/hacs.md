@@ -60,12 +60,13 @@ README-presence and local-brand validators against this checkout. The official
 hassfest container validates all standalone integration plugins. Lint, typing,
 packaging/version checks and mocked Home Assistant tests also run locally.
 
-Full HACS action execution against GitHub—including public status, description,
-topics, issues and published files/releases—must run after the repository changes
-are pushed. GitHub REST metadata access was blocked by the environment proxy;
-it is not claimed that those live repository settings were changed or verified.
-See the exact required metadata and release checklist in [releases.md](releases.md).
+After the integration was pushed, the HACS action ran and reported eight of nine
+checks passing. The failing check is repository topics. GitHub API access now
+works and confirms an empty topics list, but updating it is rejected with
+`403: Resource not accessible by integration`. The Git credential's push permission
+does not include permission to change this repository setting. See the owner-side
+fix in [releases.md](releases.md#fixing-the-hacs-topics-check).
 
-CI is configured for HACS, hassfest, tests and tag/version agreement. Configuring
-workflows is not evidence of a completed GitHub Actions run. Actual HACS
-installation/update against a published repository has not been performed here.
+CI is configured for HACS, hassfest, tests and tag/version agreement; HACS validation
+is not claimed to pass until the topics check succeeds. Actual HACS installation
+and update testing against a published repository have not been performed here.
