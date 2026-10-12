@@ -7,11 +7,7 @@ A UI-configured custom integration using official Thai Meteorological Department
 
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=atomiilol&repository=TMD_weather_HomeAssistant&category=integration)
 
-**Experimental: authenticated NWP forecasts have not been verified.** Official
-TMD documentation is now accessible. The parser is tested against its hourly and
-daily examples, and public observation examples returned live data. No private
-NWP token was available, so forecast fixtures remain documentation examples and
-synthetic test data. See [verification notes](docs/research.md).
+## Note
 
 Current weather uses **actual Weather3Hours station observations when separate
 observation credentials are supplied**. Without those optional credentials, it
