@@ -19,9 +19,6 @@ Requires **Home Assistant 2026.10.1 or later**.
   cached translations when the dialog displays raw keys.
 
 The endpoint responded with HTTP 401 to an unauthenticated live check.
-Authenticated Domain 2 responses remain unverified in development; the timeout
-change addresses a potential cause of `cannot_connect`, rather than establishing
-the cause of every connection failure.
 
 ## 0.4.0 — 2026-10-12
 
@@ -40,10 +37,7 @@ Requires **Home Assistant 2026.10.1 or later**.
   retaining strict timestamp handling for coordinate responses and the shared
   NWP rate-limit cooldown. Expose the selected source in device info/diagnostics.
 
-The guessed `/nwpapi/v2/` forecast routes returned 404. The documented Domain 2
-route returned 401 without a token. Authenticated production Domain 2 data remains
-unverified in development; the UI tests the requested source with the user's
-saved token. TMD's newer introduction documents a 3 km grid, while older endpoint
+TMD's newer introduction documents a 3 km grid, while older endpoint
 pages still contain previous resolution figures. Grid spacing does not guarantee
 measurement accuracy.
 
