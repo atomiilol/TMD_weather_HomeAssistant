@@ -122,15 +122,33 @@
         "title": "Configure weather fetching",
         "description": "Choose how often to fetch current weather and forecasts, in minutes. More frequent fetching does not make TMD publish new data sooner. API rate-limit backoff still applies.",
         "data": {
-          "fetch_interval": "Weather fetch interval (minutes)"
+          "fetch_interval": "Weather fetch interval (minutes)",
+          "forecast_source": "Forecast source"
         },
         "data_description": {
-          "fetch_interval": "A whole number from 1 to 1440 minutes. Applies to current conditions, hourly forecasts and daily forecasts. Your location and entity IDs are preserved."
+          "fetch_interval": "A whole number from 1 to 1440 minutes. Applies to current conditions, hourly forecasts and daily forecasts. Your location and entity IDs are preserved.",
+          "forecast_source": "Domain 2 requests the model TMD describes as a 3 km grid, selecting the nearest grid point within 3 km of your coordinates. It changes modeled current conditions and hourly forecasts. Daily forecasts and real station readings keep their existing sources. The new source is checked before saving."
         }
       }
     },
     "error": {
-      "invalid_fetch_interval": "Enter a whole number from 1 to 1440 minutes."
+      "invalid_fetch_interval": "Enter a whole number from 1 to 1440 minutes.",
+      "invalid_forecast_source": "Choose a supported forecast source.",
+      "invalid_auth": "TMD rejected authentication. Check the NWP token and any configured observation uid/ukey.",
+      "cannot_connect": "Could not connect to TMD. Check your connection and try again.",
+      "rate_limited": "TMD's request limit was reached. Wait before trying again.",
+      "invalid_location": "The forecast request is invalid or this location is not supported. Domain 2 requires a returned grid point within 3 km. Try the existing forecast source.",
+      "invalid_response": "The selected source did not return usable forecast data. Your previous settings were retained.",
+      "service_unavailable": "The TMD service or endpoint is unavailable. Try again later.",
+      "unknown": "An unexpected TMD API error occurred. Try again later."
+    }
+  },
+  "selector": {
+    "forecast_source": {
+      "options": {
+        "coordinate": "Existing forecast source",
+        "domain_2": "Domain 2 (3 km grid)"
+      }
     }
   }
 }

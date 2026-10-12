@@ -10,13 +10,16 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
 )
 from homeassistant.util import dt as dt_util
 import probatio
@@ -36,15 +39,58 @@ from .api import (
 from .const import (
     CONF_ACCESS_TOKEN,
     CONF_FETCH_INTERVAL,
+    CONF_FORECAST_SOURCE,
     CONF_OBSERVATION_KEY,
     CONF_OBSERVATION_UID,
+    DEFAULT_FORECAST_SOURCE,
     DOMAIN,
+    FORECAST_SOURCES,
     HOURLY_UPDATE_INTERVAL,
     MAX_FETCH_INTERVAL,
     MIN_FETCH_INTERVAL,
     OBSERVATION_UPDATE_INTERVAL,
 )
 from .observations import TMDObservationClient
+
+
+def api_error_key(error: TMDAPIError | TimeoutError) -> str:
+    """Map service failures to translated messages without credential details."""
+    if isinstance(error, TMDAuthError):
+        return "invalid_auth"
+    if isinstance(error, (TMDConnectionError, TimeoutError)):
+        return "cannot_connect"
+    if isinstance(error, TMDRateLimitError):
+        return "rate_limited"
+    if isinstance(error, TMDInvalidLocationError):
+        return "invalid_location"
+    if isinstance(error, TMDInvalidResponseError):
+        return "invalid_response"
+    if isinstance(error, TMDServiceError):
+        return "service_unavailable"
+    return "unknown"
+
+
+async def validate_forecast_source(
+    hass: HomeAssistant, entry: ConfigEntry, forecast_source: str
+) -> str | None:
+    """Test a changed forecast source before replacing a working selection."""
+    try:
+        client = TMDClient(
+            async_get_clientsession(hass),
+            entry.data[CONF_ACCESS_TOKEN],
+            entry.data[CONF_LATITUDE],
+            entry.data[CONF_LONGITUDE],
+            forecast_source=forecast_source,
+        )
+        data = await client.async_get_hourly_forecast(duration=1)
+        if (
+            not entry.data.get(CONF_OBSERVATION_UID)
+            and current_point(data, dt_util.utcnow()) is None
+        ):
+            raise TMDInvalidResponseError("No usable current model interval")
+    except (TMDAPIError, TimeoutError) as error:
+        return api_error_key(error)
+    return None
 
 
 class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -58,7 +104,11 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
         """Allow polling changes without replacing a location or credentials."""
         return TMDWeatherOptionsFlow()
 
-    async def _validate(self, data: Mapping[str, Any]) -> str | None:
+    async def _validate(
+        self,
+        data: Mapping[str, Any],
+        forecast_source: str = DEFAULT_FORECAST_SOURCE,
+    ) -> str | None:
         """Verify a current hourly sample and a daily sample with bounded calls."""
         uid, key = data.get(CONF_OBSERVATION_UID), data.get(CONF_OBSERVATION_KEY)
         if bool(uid) != bool(key):
@@ -69,6 +119,7 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
                 data[CONF_ACCESS_TOKEN],
                 data[CONF_LATITUDE],
                 data[CONF_LONGITUDE],
+                forecast_source=forecast_source,
             )
             hourly = await client.async_get_hourly_forecast(duration=1)
             if not uid and current_point(hourly, dt_util.utcnow()) is None:
@@ -82,20 +133,8 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
                     data[CONF_LATITUDE],
                     data[CONF_LONGITUDE],
                 ).async_get_current_conditions()
-        except TMDAuthError:
-            return "invalid_auth"
-        except TMDConnectionError, TimeoutError:
-            return "cannot_connect"
-        except TMDRateLimitError:
-            return "rate_limited"
-        except TMDInvalidLocationError:
-            return "invalid_location"
-        except TMDInvalidResponseError:
-            return "invalid_response"
-        except TMDServiceError:
-            return "service_unavailable"
-        except TMDAPIError:
-            return "unknown"
+        except (TMDAPIError, TimeoutError) as error:
+            return api_error_key(error)
         return None
 
     async def async_step_user(
@@ -158,7 +197,9 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
             # NWP token. Blank optional fields retain their existing binding.
             updates = {key: value for key, value in user_input.items() if value}
             data = {**entry.data, **updates}
-            if error := await self._validate(data):
+            if error := await self._validate(
+                data, entry.options.get(CONF_FORECAST_SOURCE, DEFAULT_FORECAST_SOURCE)
+            ):
                 errors["base"] = error
             else:
                 return self.async_update_reload_and_abort(
@@ -199,7 +240,9 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
                 data.get(CONF_OBSERVATION_UID) and data.get(CONF_OBSERVATION_KEY)
             ):
                 errors["base"] = "observation_credentials_required"
-            elif error := await self._validate(data):
+            elif error := await self._validate(
+                data, entry.options.get(CONF_FORECAST_SOURCE, DEFAULT_FORECAST_SOURCE)
+            ):
                 errors["base"] = error
             else:
                 return self.async_update_reload_and_abort(entry, data_updates=updates)
@@ -229,6 +272,10 @@ class TMDWeatherOptionsFlow(OptionsFlow):
         errors: dict[str, str] = {}
         if user_input is not None:
             minutes = user_input.get(CONF_FETCH_INTERVAL)
+            previous_source = self.config_entry.options.get(
+                CONF_FORECAST_SOURCE, DEFAULT_FORECAST_SOURCE
+            )
+            forecast_source = user_input.get(CONF_FORECAST_SOURCE, previous_source)
             if (
                 isinstance(minutes, bool)
                 or not isinstance(minutes, (int, float))
@@ -236,12 +283,21 @@ class TMDWeatherOptionsFlow(OptionsFlow):
                 or int(minutes) != minutes
             ):
                 errors[CONF_FETCH_INTERVAL] = "invalid_fetch_interval"
+            elif forecast_source not in FORECAST_SOURCES:
+                errors[CONF_FORECAST_SOURCE] = "invalid_forecast_source"
+            elif forecast_source != previous_source and (
+                error := await validate_forecast_source(
+                    self.hass, self.config_entry, forecast_source
+                )
+            ):
+                errors["base"] = error
             else:
                 return self.async_create_entry(
                     title="",
                     data={
                         **self.config_entry.options,
                         CONF_FETCH_INTERVAL: int(minutes),
+                        CONF_FORECAST_SOURCE: forecast_source,
                     },
                 )
         default = (
@@ -253,6 +309,18 @@ class TMDWeatherOptionsFlow(OptionsFlow):
             step_id="init",
             data_schema=probatio.Schema(
                 {
+                    probatio.Required(
+                        CONF_FORECAST_SOURCE,
+                        default=self.config_entry.options.get(
+                            CONF_FORECAST_SOURCE, DEFAULT_FORECAST_SOURCE
+                        ),
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=list(FORECAST_SOURCES),
+                            mode=SelectSelectorMode.DROPDOWN,
+                            translation_key="forecast_source",
+                        )
+                    ),
                     probatio.Required(
                         CONF_FETCH_INTERVAL,
                         default=self.config_entry.options.get(

@@ -7,6 +7,7 @@ Authenticated production forecast responses still need verification.
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
+from itertools import pairwise
 import json
 import math
 from time import monotonic
@@ -19,6 +20,10 @@ from .const import (
     DAILY_DURATION,
     DAILY_ENDPOINT,
     DAILY_FIELDS,
+    DEFAULT_FORECAST_SOURCE,
+    DOMAIN2_ENDPOINT,
+    DOMAIN2_SEARCH_RADIUS_KM,
+    FORECAST_SOURCES,
     HOURLY_DURATION,
     HOURLY_ENDPOINT,
     HOURLY_FIELDS,
@@ -134,21 +139,30 @@ def _values(data: dict[str, object], kind: ForecastKind) -> WeatherValues:
     )
 
 
-def _timestamp(value: object) -> datetime:
+def _timestamp(value: object, *, area_clock: bool = False) -> datetime:
     if not isinstance(value, str):
         raise TMDInvalidResponseError("Missing forecast timestamp")
     try:
         result = datetime.fromisoformat(value)
     except ValueError:
         raise TMDInvalidResponseError("Invalid forecast timestamp") from None
-    # Reject naive dates instead of guessing the timezone of an unknown schema.
+    # Area examples omit the offset and match the offset-free request clock.
+    # Interpret that clock as Bangkok only for this endpoint, then verify the
+    # returned first hour against our request. Coordinate forecasts stay strict.
+    if area_clock and result.tzinfo is None:
+        result = result.replace(tzinfo=BANGKOK)
     if result.tzinfo is None or result.utcoffset() is None:
         raise TMDInvalidResponseError("Forecast timestamps must include an offset")
     return result
 
 
 def parse_forecast(
-    payload: object, kind: ForecastKind, latitude: float, longitude: float
+    payload: object,
+    kind: ForecastKind,
+    latitude: float,
+    longitude: float,
+    *,
+    area_clock: bool = False,
 ) -> ForecastData:
     """Validate the NWP envelope and select the nearest returned model location.
 
@@ -162,6 +176,8 @@ def parse_forecast(
         daily_envelope = payload.get("weather_forecast")
         if isinstance(daily_envelope, dict):
             locations = daily_envelope.get("locations")
+        elif area_clock and isinstance(daily_envelope, list):
+            locations = daily_envelope
     if not isinstance(locations, list) or not locations:
         raise TMDInvalidResponseError("Missing or empty forecast locations")
     candidates: list[ForecastData] = []
@@ -183,7 +199,7 @@ def parse_forecast(
                 data := forecast.get("data"), dict
             ):
                 raise TMDInvalidResponseError("Missing forecast data")
-            timestamp = _timestamp(forecast.get("time"))
+            timestamp = _timestamp(forecast.get("time"), area_clock=area_clock)
             if timestamp in points:
                 raise TMDInvalidResponseError("Duplicate forecast timestamp")
             points[timestamp] = ForecastPoint(timestamp, _values(data, kind))
@@ -297,6 +313,7 @@ class TMDClient:
     token: str = field(repr=False)
     latitude: float
     longitude: float
+    forecast_source: str = DEFAULT_FORECAST_SOURCE
     _retry_at: float = field(default=0, init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -308,6 +325,8 @@ class TMDClient:
             raise TMDInvalidLocationError("Invalid coordinates")
         if not self.token.strip() or "\r" in self.token or "\n" in self.token:
             raise TMDAuthError("Invalid access token")
+        if self.forecast_source not in FORECAST_SOURCES:
+            raise ValueError("Unsupported forecast source")
 
     async def async_get_hourly_forecast(
         self, *, duration: int = HOURLY_DURATION
@@ -316,6 +335,23 @@ class TMDClient:
         if not 1 <= duration <= HOURLY_DURATION:
             raise ValueError("Hourly duration must be between 1 and 48")
         now = datetime.now(BANGKOK)
+        if self.forecast_source == "domain_2":
+            start = now.replace(minute=0, second=0, microsecond=0)
+            end = start + timedelta(hours=duration - 1)
+            south, west, north, east = self._domain2_box()
+            data = await self._forecast(
+                DOMAIN2_ENDPOINT,
+                "hourly",
+                {
+                    "domain": 2,
+                    "bottom-left": f"{south:.6f},{west:.6f}",
+                    "top-right": f"{north:.6f},{east:.6f}",
+                    "starttime": start.strftime("%Y-%m-%dT%H:00:00"),
+                    "endtime": end.strftime("%Y-%m-%dT%H:00:00"),
+                    "fields": HOURLY_FIELDS,
+                },
+            )
+            return ForecastData(data.latitude, data.longitude, data.points[:duration])
         return await self._forecast(
             HOURLY_ENDPOINT,
             "hourly",
@@ -348,7 +384,9 @@ class TMDClient:
     ) -> ForecastData:
         if monotonic() < self._retry_at:
             raise TMDRateLimitError("TMD retry deadline has not elapsed")
-        params.update(lat=self.latitude, lon=self.longitude)
+        area = endpoint == DOMAIN2_ENDPOINT
+        if not area:
+            params.update(lat=self.latitude, lon=self.longitude)
         try:
             payload = await async_request_json(
                 self.session,
@@ -362,4 +400,41 @@ class TMDClient:
         except TMDRateLimitError as error:
             self._retry_at = monotonic() + error.retry_after
             raise
-        return parse_forecast(payload, kind, self.latitude, self.longitude)
+        data = parse_forecast(
+            payload, kind, self.latitude, self.longitude, area_clock=area
+        )
+        if area:
+            start = _timestamp(params["starttime"], area_clock=True)
+            if data.points[0].time != start or any(
+                right.time - left.time != timedelta(hours=1)
+                for left, right in pairwise(data.points)
+            ):
+                raise TMDInvalidResponseError(
+                    "Domain 2 response does not match the requested hourly clock"
+                )
+            separation = _distance(
+                self.latitude, self.longitude, data.latitude, data.longitude
+            )
+            distance_km = 2 * 6371 * math.asin(math.sqrt(min(1, separation)))
+            if distance_km > DOMAIN2_SEARCH_RADIUS_KM:
+                raise TMDInvalidLocationError("No Domain 2 grid point within 3 km")
+        return data
+
+    def _domain2_box(self) -> tuple[float, float, float, float]:
+        """Bound the area request to a 3 km search around the requested coordinate."""
+        radius = DOMAIN2_SEARCH_RADIUS_KM / 6371
+        latitude = math.radians(self.latitude)
+        if abs(latitude) + radius >= math.pi / 2:
+            raise TMDInvalidLocationError(
+                "Cannot form a local forecast box at the pole"
+            )
+        lat_delta = math.degrees(radius)
+        lon_delta = math.degrees(math.asin(math.sin(radius) / math.cos(latitude)))
+        if not -180 <= self.longitude - lon_delta < self.longitude + lon_delta <= 180:
+            raise TMDInvalidLocationError("Forecast box crosses the date line")
+        return (
+            self.latitude - lat_delta,
+            self.longitude - lon_delta,
+            self.latitude + lat_delta,
+            self.longitude + lon_delta,
+        )

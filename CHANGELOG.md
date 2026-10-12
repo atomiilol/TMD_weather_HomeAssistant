@@ -3,6 +3,30 @@
 Versions follow semantic versioning. A version becomes available through HACS
 after the corresponding GitHub Release is published; a tag alone is insufficient.
 
+## 0.4.0 — 2026-10-12
+
+Requires **Home Assistant 2026.10.1 or later**.
+
+- Add **Configure → Forecast source → Domain 2 (3 km grid)** for modeled current
+  conditions and hourly forecasts. Preserve the existing source as the default.
+- Request `domain=2` through TMD's documented `/v1/forecast/area/box` API, using
+  a small bounding box and accepting only a nearest grid point within 3 km.
+  Retain the 48-hour forecast limit. Daily forecasts and actual station readings
+  keep their existing sources.
+- Validate a sample with the saved token before applying a source change. Reject
+  invalid coverage, mismatched clock/cadence and service/authentication errors
+  without replacing the previous settings. Preserve configuration and entity IDs.
+- Support the documented area response envelope and its local Bangkok clock,
+  retaining strict timestamp handling for coordinate responses and the shared
+  NWP rate-limit cooldown. Expose the selected source in device info/diagnostics.
+
+The guessed `/nwpapi/v2/` forecast routes returned 404. The documented Domain 2
+route returned 401 without a token. Authenticated production Domain 2 data remains
+unverified in development; the UI tests the requested source with the user's
+saved token. TMD's newer introduction documents a 3 km grid, while older endpoint
+pages still contain previous resolution figures. Grid spacing does not guarantee
+measurement accuracy.
+
 ## 0.3.0 — 2026-10-12
 
 Requires **Home Assistant 2026.10.1 or later**.

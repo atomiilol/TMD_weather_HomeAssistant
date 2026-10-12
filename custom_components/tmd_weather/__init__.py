@@ -8,7 +8,13 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_utc_time_change
 
 from .api import TMDClient
-from .const import CONF_ACCESS_TOKEN, CONF_OBSERVATION_KEY, CONF_OBSERVATION_UID
+from .const import (
+    CONF_ACCESS_TOKEN,
+    CONF_FORECAST_SOURCE,
+    CONF_OBSERVATION_KEY,
+    CONF_OBSERVATION_UID,
+    DEFAULT_FORECAST_SOURCE,
+)
 from .coordinator import (
     TMDDailyForecastDataUpdateCoordinator,
     TMDHourlyForecastDataUpdateCoordinator,
@@ -28,6 +34,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: TMDWeatherConfigEntry) -
         entry.data[CONF_ACCESS_TOKEN],
         entry.data[CONF_LATITUDE],
         entry.data[CONF_LONGITUDE],
+        forecast_source=entry.options.get(
+            CONF_FORECAST_SOURCE, DEFAULT_FORECAST_SOURCE
+        ),
     )
     hourly = TMDHourlyForecastDataUpdateCoordinator(hass, entry, client)
     daily = TMDDailyForecastDataUpdateCoordinator(hass, entry, client)

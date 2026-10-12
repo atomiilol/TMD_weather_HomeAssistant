@@ -11,9 +11,11 @@ from homeassistant.util import dt as dt_util
 from .api import current_point
 from .const import (
     CONF_ACCESS_TOKEN,
+    CONF_FORECAST_SOURCE,
     CONF_OBSERVATION_KEY,
     CONF_OBSERVATION_UID,
     CURRENT_SOURCE,
+    DEFAULT_FORECAST_SOURCE,
     OBSERVATION_SOURCE,
 )
 from .coordinator import TMDForecastDataUpdateCoordinator, TMDWeatherConfigEntry
@@ -55,6 +57,12 @@ async def async_get_config_entry_diagnostics(
     station = observation.data if observation is not None else None
     return {
         "config": async_redact_data(dict(config_entry.data), TO_REDACT),
+        "forecast_source": config_entry.options.get(
+            CONF_FORECAST_SOURCE, DEFAULT_FORECAST_SOURCE
+        ),
+        "requested_hourly_domain": 2
+        if config_entry.options.get(CONF_FORECAST_SOURCE) == "domain_2"
+        else None,
         "fetch_intervals_minutes": {
             name: coordinator.update_interval.total_seconds() / 60
             if coordinator is not None and coordinator.update_interval is not None

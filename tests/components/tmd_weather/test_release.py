@@ -11,7 +11,7 @@ from script.check_release import ROOT, release_notes, validate
 
 def test_release_and_hacs_layout():
     """The proposed release has one integration and uses standard HACS refs."""
-    assert validate(tag="v0.3.0") == "0.3.0"
+    assert validate(tag="v0.4.0") == "0.4.0"
     hacs = json.loads((ROOT / "hacs.json").read_text())
     assert hacs["name"] == "Thai Meteorological Department (TMD)"
     assert hacs["country"] == "TH"
@@ -42,7 +42,7 @@ def release_copy(tmp_path):
 def test_project_version_mismatch(release_copy):
     """Do not distribute divergent project and integration versions."""
     path = release_copy / "pyproject.toml"
-    path.write_text(path.read_text().replace('version = "0.3.0"', 'version = "0.4.0"'))
+    path.write_text(path.read_text().replace('version = "0.4.0"', 'version = "0.5.0"'))
     with pytest.raises(ValueError, match="versions differ"):
         validate(release_copy)
 

@@ -376,3 +376,126 @@ async def test_invalid_duration():
             await client.async_get_hourly_forecast(duration=49)
         with pytest.raises(ValueError):
             await client.async_get_daily_forecast(duration=8)
+
+
+async def test_domain2_request(aioclient_mock, hourly_json, daily_json):
+    """Select Domain 2 explicitly through the documented area API, preserving daily."""
+    from custom_components.tmd_weather.const import DOMAIN2_ENDPOINT, HOURLY_FIELDS
+
+    payload = {"weather_forecast": hourly_json["WeatherForcasts"]}
+    # The area API's documented response omits its Thai local-clock offset.
+    for point in payload["weather_forecast"][0]["forecasts"]:
+        point["time"] = point["time"].removesuffix("+07:00")
+    aioclient_mock.get(NWP_BASE_URL + DOMAIN2_ENDPOINT, json=payload)
+    aioclient_mock.get(NWP_BASE_URL + DAILY_ENDPOINT, json=daily_json)
+    async with ClientSession() as session:
+        client = TMDClient(
+            session, "test-secret", 13.75, 100.5, forecast_source="domain_2"
+        )
+        result = await client.async_get_hourly_forecast()
+        assert result.points[0].time.isoformat() == "2026-10-11T10:00:00+07:00"
+        assert result.points[0].values.temperature == 30.5
+        await client.async_get_daily_forecast()
+    query = aioclient_mock.mock_calls[0][1].query
+    assert query["domain"] == "2"
+    assert query["fields"] == HOURLY_FIELDS
+    assert query["starttime"] == "2026-10-11T10:00:00"
+    assert query["endtime"] == "2026-10-13T09:00:00"
+    south, west = map(float, query["bottom-left"].split(","))
+    north, east = map(float, query["top-right"].split(","))
+    assert 13.72 < south < 13.75 < north < 13.78
+    assert 100.47 < west < 100.5 < east < 100.53
+    assert "lat" not in query and "date" not in query
+    assert aioclient_mock.mock_calls[1][1].path.endswith(DAILY_ENDPOINT)
+
+
+def test_documented_area_example():
+    """Read the distinct documented area envelope and endpoint-specific clock."""
+    payload = json.loads(
+        (Path(__file__).parent / "fixtures/documented_area.json").read_text()
+    )
+    result = parse_forecast(payload, "hourly", 13.1582, 100.1614, area_clock=True)
+    assert result.latitude == 13.1582
+    assert result.longitude == 100.1614
+    assert result.points[0].values.temperature == 28.45
+    assert result.points[0].time.isoformat() == "2017-08-23T15:00:00+07:00"
+    with pytest.raises(TMDInvalidResponseError):
+        parse_forecast(payload, "hourly", 13.1582, 100.1614)
+
+
+async def test_domain2_rejects_distant_grid(aioclient_mock, hourly_json):
+    """Do not relabel a distant model grid point as nearby high-resolution data."""
+    from custom_components.tmd_weather.const import DOMAIN2_ENDPOINT
+
+    hourly_json["WeatherForcasts"][0]["location"]["lat"] = 14
+    aioclient_mock.get(NWP_BASE_URL + DOMAIN2_ENDPOINT, json=hourly_json)
+    async with ClientSession() as session:
+        client = TMDClient(
+            session, "test-secret", 13.75, 100.5, forecast_source="domain_2"
+        )
+        with pytest.raises(TMDInvalidLocationError):
+            await client.async_get_hourly_forecast()
+
+
+async def test_domain2_rate_limit(aioclient_mock):
+    """Area forecasts share the account cooldown with daily coordinate forecasts."""
+    from custom_components.tmd_weather.const import DOMAIN2_ENDPOINT
+
+    aioclient_mock.get(
+        NWP_BASE_URL + DOMAIN2_ENDPOINT, status=429, headers={"Retry-After": "120"}
+    )
+    async with ClientSession() as session:
+        client = TMDClient(
+            session, "test-secret", 13.75, 100.5, forecast_source="domain_2"
+        )
+        with (
+            patch("custom_components.tmd_weather.api.monotonic", return_value=100),
+            pytest.raises(TMDRateLimitError),
+        ):
+            await client.async_get_hourly_forecast()
+        with (
+            patch("custom_components.tmd_weather.api.monotonic", return_value=110),
+            pytest.raises(TMDRateLimitError),
+        ):
+            await client.async_get_daily_forecast()
+    assert aioclient_mock.call_count == 1
+
+
+@pytest.mark.parametrize("lat,lon", [(90, 0), (-90, 0), (13.75, 180), (13.75, -180)])
+async def test_domain2_box_limits(lat, lon, aioclient_mock):
+    """Reject boxes which the provider's rectangular query cannot represent."""
+    async with ClientSession() as session:
+        client = TMDClient(session, "test-secret", lat, lon, forecast_source="domain_2")
+        with pytest.raises(TMDInvalidLocationError):
+            await client.async_get_hourly_forecast()
+    assert aioclient_mock.call_count == 0
+
+
+async def test_invalid_forecast_source():
+    """A source setting cannot replace the fixed provider URL with another host."""
+    async with ClientSession() as session:
+        with pytest.raises(ValueError, match="forecast source"):
+            TMDClient(session, "test-secret", 13.75, 100.5, forecast_source="v2")
+
+
+@pytest.mark.parametrize(
+    "wrong_time", ["2026-10-11T03:00:00", "2026-10-11T13:00:00+07:00"]
+)
+async def test_domain2_clock_mismatch(aioclient_mock, hourly_json, wrong_time):
+    """Wrong timezone/interval responses cannot be accepted as current Domain 2 data."""
+    from custom_components.tmd_weather.const import DOMAIN2_ENDPOINT
+
+    forecasts = hourly_json["WeatherForcasts"][0]["forecasts"]
+    if wrong_time.endswith("+07:00"):
+        forecasts[1]["time"] = wrong_time
+        del forecasts[2:]
+    else:
+        forecasts[0]["time"] = wrong_time
+        del forecasts[1:]
+    aioclient_mock.get(NWP_BASE_URL + DOMAIN2_ENDPOINT, json=hourly_json)
+    async with ClientSession() as session:
+        client = TMDClient(
+            session, "test-secret", 13.75, 100.5, forecast_source="domain_2"
+        )
+        with pytest.raises(TMDInvalidResponseError, match="hourly clock"):
+            await client.async_get_hourly_forecast()

@@ -9,13 +9,15 @@ now accessible; authenticated NWP forecast payloads remain unverified.
   pair is configured. Without that pair, explicit current-hour NWP estimates.
   Source changes require UI reconfiguration; outages never silently change it.
 - **Forecast sources:** verified official HTTPS `location/hourly/at` and
-  `location/daily/at` coordinate endpoints, isolated behind `api.py`.
+  `location/daily/at` coordinate endpoints, isolated behind `api.py`. An optional
+  source explicitly selects Domain 2 on `forecast/area/box`, with a small area
+  request and nearest-point distance capped at 3 km. Daily data remains separate.
 - **Authentication:** documented NWP bearer contract, user-entered token, shared HA
   aiohttp session, no redirects. No refresh grant is invented; observation
   credentials are not assumed interchangeable.
-- **Polling:** default observations 30 minutes, hourly 60 minutes and daily 180 minutes; a per-location options flow sets an interval of 1–1440 whole minutes for active datasets
-  when stale. Conservative choices below the documented quotas; model publication
-  cadence is not established.
+- **Polling:** default observations 30 minutes, hourly 60 minutes and daily 180
+  minutes; a per-location options flow sets an interval of 1–1440 whole minutes
+  for active datasets. Model publication cadence is not established.
   Server Retry-After takes precedence; no custom retry loops.
 - **Identity:** requested latitude/longitude to four decimals, signed zero
   normalized, independent of name/token/model-grid changes. About 11 m latitude
@@ -170,7 +172,7 @@ access. Private production credential issuance/quota guarantees remain unknown.
 | Row schema | Official examples confirm `location.lat/lon`, `forecasts[].time`, `forecasts[].data` and JSON numbers |
 | Time | Require explicit offsets; use current-hour interval; reject naive dates rather than assume UTC |
 | Rain | Hourly rain / 24-hour daily rain and mm units documented; exact interval alignment still needs confirmation |
-| Coverage / grid resolution | Hourly 2 km, daily 18/27 km documented; no guessed country bounds |
+| Coverage / grid resolution | Newer introduction: Domain 2 is a 3 km hourly grid, Domain 1 is 9 km/three-hourly; older endpoint pages list 2/6/18/27 km. Existing coordinate model mapping is not inferred from `/v1/`. Explicit Domain 2 uses the documented area selector; no guessed country bounds |
 | Quota / model cadence | 60 requests/minute and 100,000 datapoints/hour documented; later header prose inconsistently says requests/hour; publication cadence unknown |
 | Cloud total / UV / probability | No verified field in the selected NWP endpoints; omitted |
 | Visibility / dew point | Exposed directly from Weather3Hours; not calculated |
@@ -179,8 +181,17 @@ The coordinate endpoint is assumed to honor the requested coordinate. Multiple
 returned locations are reduced to one nearest valid model coordinate using
 haversine angular distance with coordinate tie-breakers; their series are never
 mixed. This is model-location selection, not observation-station selection.
-There is no guessed maximum forecast-grid distance. The observation adapter's
+The existing coordinate source has no guessed maximum forecast-grid distance. The observation adapter's
 separate 100 km station radius is an explicit integration policy.
+
+For the optional Domain 2 source, the request and accepted nearest grid point are
+bounded to a 3 km search radius. The default coordinate source retains its existing
+behavior. This spatial policy is distinct from model grid spacing and from the
+observation-station search radius. Probe results on 2026-10-12: guessed `/v2/`
+hourly/daily coordinate routes returned 404; the documented `/v1/forecast/area/box`
+with `domain=2` returned 401 (`Unauthenticated.`). No private NWP token was available
+to verify production responses. UI source changes validate one requested sample
+before saving, and mocked HTTP tests cover the entire switch/parser/entity path.
 
 ## Before production use
 

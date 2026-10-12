@@ -29,3 +29,11 @@ to match the default frozen test clock. It is not a second production capture.
 Add sanitized real fixtures only after authorized production verification, with
 provenance and capture dates. Never include tokens or raw authenticated request
 metadata.
+
+`documented_area.json` reproduces the first area-box JSON example retrieved on
+2026-10-12 from https://data.tmd.go.th/nwpapi/doc/apidoc/forecast_area.html. The page
+omits the final closing array/object delimiters; those two delimiters were added
+to make the fixture valid JSON. Coordinates, values and offset-free times are
+unchanged. The endpoint-specific adapter interprets that clock in Asia/Bangkok;
+coordinate responses continue to reject naive timestamps. This is documentation
+data, not an authenticated production capture.

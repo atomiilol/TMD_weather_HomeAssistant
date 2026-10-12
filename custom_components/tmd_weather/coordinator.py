@@ -17,6 +17,7 @@ from homeassistant.helpers.update_coordinator import (
 from .api import ForecastData, TMDAPIError, TMDAuthError, TMDClient, TMDRateLimitError
 from .const import (
     CONF_FETCH_INTERVAL,
+    CONF_FORECAST_SOURCE,
     CONF_OBSERVATION_UID,
     DAILY_UPDATE_INTERVAL,
     DOMAIN,
@@ -52,13 +53,16 @@ type TMDWeatherConfigEntry = ConfigEntry[TMDWeatherData]
 def device_info(entry: TMDWeatherConfigEntry) -> DeviceInfo:
     """Describe the configured weather service with stable coordinate identity."""
     assert entry.unique_id is not None
+    domain2 = entry.options.get(CONF_FORECAST_SOURCE) == "domain_2"
     return DeviceInfo(
         entry_type=DeviceEntryType.SERVICE,
         identifiers={(DOMAIN, entry.unique_id)},
         manufacturer=MANUFACTURER,
-        model="TMD station + NWP"
+        model=("TMD station + Domain 2 forecast" if domain2 else "TMD station + NWP")
         if entry.data.get(CONF_OBSERVATION_UID)
-        else "TMD NWP (modeled weather)",
+        else (
+            "TMD Domain 2 (modeled weather)" if domain2 else "TMD NWP (modeled weather)"
+        ),
         name=entry.title,
         configuration_url="https://www.tmd.go.th/",
     )

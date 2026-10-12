@@ -25,6 +25,8 @@ device information and diagnostics and never changes silently during outages.
   otherwise modeled current conditions.
 - Hourly forecasts (up to 48 hours) and daily forecasts (up to 7 days), including
   rainfall amounts and daily high/low temperatures.
+- Optional **Domain 2** source for modeled current weather and hourly forecasts,
+  using the model TMD currently documents as a 3 km grid.
 - One rainfall sensor: **Station rainfall** or **Modeled rainfall this hour**,
   according to the configured current source; never a cumulative counter or probability.
 - Separate sensors for temperature, humidity, sea-level pressure, wind speed,
@@ -105,6 +107,43 @@ handling, request timeouts and the existing server rate-limit backoff continue t
 apply at every interval.
 Cached modeled values still advance as the model hour changes, and expired station
 measurements become unavailable between fetches. These checks make no API requests.
+
+## Select Domain 2 forecasts
+
+Open the location's **Configure** dialog and select **Forecast source → Domain 2
+(3 km grid)**, then **Submit**. The integration tests one forecast sample with your
+saved NWP token before accepting the change. Authentication, coverage or response
+errors leave your previous settings intact. Your coordinates, credentials,
+weather entity and supported sensor IDs are preserved, including when switching
+back to **Existing forecast source**.
+
+Domain 2 changes **modeled current conditions and hourly forecasts**. If station
+observations are configured, they remain the source of current measurements.
+To use modeled Domain 2 values for current weather too, use **Reconfigure** and
+turn off **Use station observations**.
+Daily forecasts keep their existing coordinate endpoint; they are not relabeled
+as Domain 2 or as 3 km data. The existing forecast source remains the default.
+
+TMD's [current introduction](https://data.tmd.go.th/nwpapi/doc/) describes Domain 2
+as a **3 km spatial grid** with hourly forecasts out to 72 hours. The integration
+requests up to 48 hours. Grid spacing describes the forecast model, rather than
+the accuracy of a station measurement. This option additionally selects only the
+nearest returned grid point within **3 km** of your coordinates, using a small
+bounding-box request. Locations without a suitable point cannot select this source.
+
+**API version and model domain are separate.** This option uses the documented
+`/nwpapi/v1/forecast/area/box` endpoint with `domain=2`, `bottom-left`, `top-right`,
+`starttime`, `endtime` and the existing hourly fields. It does not use `/nwpapi/v2/`:
+both tested coordinate `/v2/` routes returned HTTP 404. The optional station API
+already uses `Weather3Hours/V2`, which is a separate service.
+
+The [area endpoint documentation](https://data.tmd.go.th/nwpapi/doc/apidoc/forecast_area.html)
+still has older resolution figures and an offset-free response example. The adapter
+interprets its response on the same Asia/Bangkok clock used for the request, and returned
+timestamps must match the requested hour and hourly cadence. Coordinate responses
+still require explicit offsets. The registered Domain 2 endpoint returned HTTP
+401 without credentials; authenticated live Domain 2 data has not been verified
+in development. The options flow performs that check using your own token.
 
 ## Installation
 
@@ -210,6 +249,7 @@ IDs are preserved. Reauthentication can replace the NWP token and/or legacy pair
 | Current station weather | `https://data.tmd.go.th/api/Weather3Hours/V2/` | Nearest fresh station; 30-minute default, configurable |
 | Modeled current weather | Current NWP hourly timestep | Used only when observation credentials are absent |
 | Hourly forecast | `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at` | Request 48 hours; 60-minute default, configurable; on demand without subscribers |
+| Domain 2 hourly forecast (optional) | `https://data.tmd.go.th/nwpapi/v1/forecast/area/box` with `domain=2` | Small area request, nearest grid point within 3 km; same hourly cache/interval |
 | Daily forecast | `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at` | Request 7 days; 180-minute default, configurable; on demand when stale |
 | Other observations | WeatherToday / station catalog | Researched; Weather3Hours already includes the metadata needed for station selection |
 
@@ -362,7 +402,7 @@ uv run --frozen pytest tests/components/tmd_weather --cov --cov-report=term-miss
 uv run --frozen ruff check custom_components tests script
 uv run --frozen ruff format --check custom_components tests script
 uv run --frozen mypy custom_components/tmd_weather script/check_release.py
-uv run --frozen python script/check_release.py --tag v0.3.0
+uv run --frozen python script/check_release.py --tag v0.4.0
 ```
 
 `uv.lock` pins development dependencies, including HA 2026.10.1. Tests use real

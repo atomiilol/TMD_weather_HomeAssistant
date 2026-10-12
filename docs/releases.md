@@ -1,6 +1,6 @@
 # Releases and repository metadata
 
-The release version is **0.3.0**. Published versions are listed in
+The release version is **0.4.0**. Published versions are listed in
 [GitHub Releases](https://github.com/atomiilol/TMD_weather_HomeAssistant/releases).
 HACS uses the latest published release tag as the available update version.
 
@@ -45,7 +45,7 @@ and the validation check should remain enabled.
 3. Run the tests/lint/types from the README, plus:
 
    ```sh
-   uv run --frozen python script/check_release.py --tag v0.3.0
+   uv run --frozen python script/check_release.py --tag v0.4.0
    ```
 
    Substitute the proposed version for later releases. The check rejects a tag
@@ -56,8 +56,8 @@ and the validation check should remain enabled.
 5. Create an annotated version tag on the tested commit, then push that tag:
 
    ```sh
-   git tag -a v0.3.0 -m "Release v0.3.0" <tested-commit-sha>
-   git push origin v0.3.0
+   git tag -a v0.4.0 -m "Release v0.4.0" <tested-commit-sha>
+   git push origin v0.4.0
    ```
 
    Use the next semantic version for subsequent releases; never move or reuse
@@ -80,7 +80,7 @@ HACS identifies the integration content inside the chosen ref.
 
 If a publishing run fails, fix the cause and rerun it from GitHub Actions. For an
 existing tag whose release has not been published, **Run workflow** with that tag
-selected, or use `gh workflow run release.yml --ref v0.3.0`. Dispatching on a
+selected, or use `gh workflow run release.yml --ref v0.4.0`. Dispatching on a
 branch is rejected. An existing published release is left intact during retries.
 Do not overwrite a published release to distribute changes: create a new version.
 
