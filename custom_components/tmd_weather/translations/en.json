@@ -72,6 +72,36 @@
       },
       "station_rainfall": {
         "name": "Station rainfall"
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "humidity": {
+        "name": "Humidity"
+      },
+      "pressure": {
+        "name": "Sea-level pressure"
+      },
+      "wind_speed": {
+        "name": "Wind speed"
+      },
+      "wind_bearing": {
+        "name": "Wind direction"
+      },
+      "dew_point": {
+        "name": "Dew point"
+      },
+      "visibility": {
+        "name": "Visibility"
+      },
+      "forecast_temperature_high": {
+        "name": "Forecast high temperature today"
+      },
+      "forecast_temperature_low": {
+        "name": "Forecast low temperature today"
+      },
+      "forecast_rainfall": {
+        "name": "Forecast rainfall today"
       }
     }
   },

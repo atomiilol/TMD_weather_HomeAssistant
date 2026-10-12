@@ -1,6 +1,6 @@
 # Releases and repository metadata
 
-The initial version is **0.1.0**, prepared for review. Nothing in this task creates
+The current version is **0.2.0**, prepared for review. Nothing in this task creates
 or pushes a Git tag or publishes a GitHub Release.
 
 ## GitHub repository settings
@@ -26,13 +26,13 @@ as topics. Save, then rerun the failed HACS workflow from GitHub Actions.
 HACS filters generic topics such as `home-assistant` and `hacs`; those labels alone
 do not satisfy the check. Keep descriptive topics as well.
 
-The GitHub API currently confirms that this repository has no topics. Reading
-metadata works, but the integration credential cannot update topics: GitHub
-returns `403: Resource not accessible by integration`. Repository write access
-for Git pushes does not establish permission to edit repository settings. A
-repository owner or another suitably authorized user must add the topics through
-GitHub or grant an API credential the required permission. Recommitting files
-cannot change this metadata, and the validation check should remain enabled.
+This repository now has `weather`, `thailand` and `tmd` topics. Earlier validation
+failed while its topics were empty, and the environment's integration credential
+received `403: Resource not accessible by integration` when attempting to edit
+them. Repository write access for Git pushes does not establish permission to
+edit repository settings. Future topic changes require a repository owner or
+another suitably authorized user. Recommitting files cannot change this metadata,
+and the validation check should remain enabled.
 
 ## Publish a version
 
@@ -44,7 +44,7 @@ cannot change this metadata, and the validation check should remain enabled.
 3. Run the tests/lint/types from the README, plus:
 
    ```sh
-   uv run --frozen python script/check_release.py --tag v0.1.0
+   uv run --frozen python script/check_release.py --tag v0.2.0
    ```
 
    Substitute the proposed version for later releases. The check rejects a tag
@@ -52,7 +52,7 @@ cannot change this metadata, and the validation check should remain enabled.
    that would make HACS install the wrong directory.
 4. Commit and push the reviewed changes. Wait for **Tests**, **HACS validation**
    and **Hassfest validation** to pass on GitHub; fix actual failures.
-5. In GitHub's **Releases**, create and publish a release with tag `v0.1.0`
+5. In GitHub's **Releases**, create and publish a release with tag `v0.2.0`
    (or the matching later version) pointing to that tested commit. Copy the
    version's changelog into the release notes. Use GitHub's pre-release flag for
    releases intended only for testing.

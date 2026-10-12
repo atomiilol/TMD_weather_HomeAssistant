@@ -72,6 +72,36 @@
       },
       "station_rainfall": {
         "name": "ปริมาณฝนที่สถานี"
+      },
+      "temperature": {
+        "name": "อุณหภูมิ"
+      },
+      "humidity": {
+        "name": "ความชื้น"
+      },
+      "pressure": {
+        "name": "ความกดอากาศระดับน้ำทะเล"
+      },
+      "wind_speed": {
+        "name": "ความเร็วลม"
+      },
+      "wind_bearing": {
+        "name": "ทิศทางลม"
+      },
+      "dew_point": {
+        "name": "จุดน้ำค้าง"
+      },
+      "visibility": {
+        "name": "ทัศนวิสัย"
+      },
+      "forecast_temperature_high": {
+        "name": "อุณหภูมิสูงสุดที่พยากรณ์วันนี้"
+      },
+      "forecast_temperature_low": {
+        "name": "อุณหภูมิต่ำสุดที่พยากรณ์วันนี้"
+      },
+      "forecast_rainfall": {
+        "name": "ปริมาณฝนที่พยากรณ์วันนี้"
       }
     }
   },

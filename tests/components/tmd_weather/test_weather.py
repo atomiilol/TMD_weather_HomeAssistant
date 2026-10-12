@@ -137,7 +137,7 @@ async def test_rain_sensor(hass, setup_entry):
 
 
 async def test_device_identity(hass, setup_entry, device_registry, entity_registry):
-    """Both entities belong to one service device with stable location identity."""
+    """Weather and sensors share one service device with stable location identity."""
     device = device_registry.async_get_device_by_identifier(
         ("tmd_weather", setup_entry.unique_id), setup_entry.entry_id
     )
@@ -150,7 +150,7 @@ async def test_device_identity(hass, setup_entry, device_registry, entity_regist
         for entry in entity_registry.entities.values()
         if entry.config_entry_id == setup_entry.entry_id
     ]
-    assert len(entities) == 2
+    assert len(entities) == 12
     assert all(entry.device_id == device.id for entry in entities)
 
 
@@ -158,6 +158,8 @@ async def test_forecast_listener(hass, setup_entry):
     """Use CoordinatorWeatherEntity's current subscription/listener mechanism."""
     entity_id = hass.states.async_entity_ids("weather")[0]
     entity = hass.data["weather"].get_entity(entity_id)
+    coordinator = setup_entry.runtime_data.daily_coordinator
+    original_listeners = len(coordinator._listeners)
     updates = []
 
     @callback
@@ -165,7 +167,6 @@ async def test_forecast_listener(hass, setup_entry):
         updates.append(points)
 
     unsub = entity.async_subscribe_forecast("daily", receive)
-    coordinator = setup_entry.runtime_data.daily_coordinator
     data = coordinator.data
     point = data.points[0]
     revised = replace(point, values=replace(point.values, temperature=35))
@@ -176,4 +177,4 @@ async def test_forecast_listener(hass, setup_entry):
     assert updates
     assert updates[-1][0]["temperature"] == 35
     unsub()
-    assert not coordinator._listeners
+    assert len(coordinator._listeners) == original_listeners

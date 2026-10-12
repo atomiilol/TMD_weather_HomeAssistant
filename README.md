@@ -1,5 +1,7 @@
 # Thai Meteorological Department (TMD) for Home Assistant
 
+<img src="custom_components/tmd_weather/brand/logo.png" alt="TMD emblem" width="128">
+
 A UI-configured custom integration using official Thai Meteorological Department
 (กรมอุตุนิยมวิทยา) NWP coordinate APIs. Domain: `tmd_weather`.
 
@@ -25,6 +27,9 @@ device information and diagnostics and never changes silently during outages.
   rainfall amounts and daily high/low temperatures.
 - One rainfall sensor: **Station rainfall** or **Modeled rainfall this hour**,
   according to the configured current source; never a cumulative counter or probability.
+- Separate sensors for temperature, humidity, sea-level pressure, wind speed,
+  wind direction, dew point and visibility, plus today's forecast high/low
+  temperatures and rainfall. All share the existing weather/forecast caches.
 - UI setup using HA's coordinates by default, duplicate detection, reauthentication,
   English/Thai translations and redacted diagnostics.
 - Bounded async requests, rate-limit backoff and recovery from temporary failures.
@@ -33,6 +38,44 @@ Requires **Home Assistant 2026.10.1 or later** and its Python 3.14 runtime.
 Tested with Home Assistant 2026.10.1 / Python 3.14.8. Earlier versions are not
 supported: this uses current `probatio` secret fields, typed runtime data and
 timestamped weather coordinators. Future releases still need compatibility testing.
+
+## Separate sensor entities
+
+Each configured location has one weather entity and eleven sensor entities.
+Use the sensors directly in dashboards, automations and history, as with
+AccuWeather's separate measurement entities. Find them under **Settings → Devices
+& services → Thai Meteorological Department (TMD)** and open your location's device.
+
+| Sensor | Native unit | Source |
+| --- | --- | --- |
+| Temperature | °C | Configured current source |
+| Humidity | % | Configured current source |
+| Sea-level pressure | hPa | Configured current source |
+| Wind speed | m/s | Configured current source |
+| Wind direction | ° | Configured current source |
+| Dew point | °C | Station observations only |
+| Visibility | km | Station observations only |
+| Station rainfall / Modeled rainfall this hour | mm | Configured current source |
+| Forecast high temperature today | °C | Daily NWP forecast |
+| Forecast low temperature today | °C | Daily NWP forecast |
+| Forecast rainfall today | mm | Daily NWP forecast |
+
+Current sensors use the same station or modeled values as the weather entity.
+Their `data_source` attribute identifies `station` or `nwp_model`; they never switch
+sources during outages. Dew point and visibility remain **unknown** without station
+observations. Other optional measurements also remain unknown when TMD omits them.
+Expired data or a failed update makes that source's sensors **unavailable**.
+
+Forecast sensors explicitly identify `nwp_forecast` and a `forecast_date`. "Today"
+uses Thailand's **Asia/Bangkok** calendar. A daily forecast failure affects these
+three sensors independently of current conditions. Forecasts and rainfall amounts
+do not collect cumulative or measurement statistics; current measurement sensors
+use Home Assistant's measurement statistics, including circular wind-direction
+statistics. Home Assistant handles supported display-unit conversions.
+
+Upgrading to 0.2.0 adds the new sensors automatically after restarting Home
+Assistant. Your location configuration and existing weather/rainfall entity IDs
+are preserved. Disable any unwanted sensors using Home Assistant's entity controls.
 
 ## Installation
 
@@ -254,7 +297,7 @@ The integration does not borrow a forecast icon and label it as an observation.
   raw authenticated requests.
 - **Service unavailable / HTTP 404:** an endpoint may have changed; it is not
   silently treated as a bad token or replaced with fabricated data.
-- No options flow is needed for this version. Disable the rainfall sensor through
+- No options flow is needed for this version. Disable unwanted sensors through
   HA's entity controls if unwanted.
 
 ## Updates through HACS
@@ -294,7 +337,7 @@ custom_components/tmd_weather/
 ├── __init__.py
 ├── api.py
 ├── observations.py
-├── brand/                   # Local 256/512 px community weather icon
+├── brand/                   # Supplied TMD emblem as local icon/logo assets
 ├── config_flow.py
 ├── const.py
 ├── coordinator.py

@@ -11,7 +11,7 @@ from script.check_release import ROOT, validate
 
 def test_release_and_hacs_layout():
     """The proposed release has one integration and uses standard HACS refs."""
-    assert validate(tag="v0.1.0") == "0.1.0"
+    assert validate(tag="v0.2.0") == "0.2.0"
     hacs = json.loads((ROOT / "hacs.json").read_text())
     assert hacs["name"] == "Thai Meteorological Department (TMD)"
     assert hacs["country"] == "TH"
@@ -19,7 +19,7 @@ def test_release_and_hacs_layout():
     assert "render_readme" not in hacs
 
 
-@pytest.mark.parametrize("tag", ["0.1.0", "v1.0.0", "v0.1.0-dev", "latest"])
+@pytest.mark.parametrize("tag", ["0.2.0", "v1.0.0", "v0.2.0-dev", "latest"])
 def test_wrong_release_tag(tag):
     """Reject tags that would disagree with the version installed by HA."""
     with pytest.raises(ValueError, match="Release tag"):
@@ -42,7 +42,7 @@ def release_copy(tmp_path):
 def test_project_version_mismatch(release_copy):
     """Do not distribute divergent project and integration versions."""
     path = release_copy / "pyproject.toml"
-    path.write_text(path.read_text().replace('version = "0.1.0"', 'version = "0.2.0"'))
+    path.write_text(path.read_text().replace('version = "0.2.0"', 'version = "0.3.0"'))
     with pytest.raises(ValueError, match="versions differ"):
         validate(release_copy)
 
@@ -61,12 +61,13 @@ def test_missing_brand(release_copy):
         validate(release_copy)
 
 
-@pytest.mark.parametrize("filename,size", [("icon.png", 256), ("icon@2x.png", 512)])
-def test_brand_images(filename, size):
-    """Validate PNG format, dimensions and transparent rather than blank artwork."""
+@pytest.mark.parametrize(
+    "filename", ["icon.png", "icon@2x.png", "logo.png", "logo@2x.png"]
+)
+def test_brand_images(filename):
+    """Keep the supplied high-resolution emblem intact in all brand variants."""
     with Image.open(ROOT / "custom_components/tmd_weather/brand" / filename) as image:
         assert image.format == "PNG"
-        assert image.size == (size, size)
-        assert image.mode == "RGBA"
-        assert image.getchannel("A").getextrema() == (0, 255)
+        assert image.size == (2340, 2404)
+        assert image.mode in ("RGB", "RGBA")
         assert image.getbbox() is not None

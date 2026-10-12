@@ -31,7 +31,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .api import BANGKOK, ForecastPoint, WeatherValues, current_point
+from .api import BANGKOK, ForecastPoint, WeatherValues
 from .const import ATTRIBUTION
 from .coordinator import (
     TMDDailyForecastDataUpdateCoordinator,
@@ -40,7 +40,7 @@ from .coordinator import (
     TMDWeatherConfigEntry,
     device_info,
 )
-from .observations import observation_is_fresh
+from .entity import current_values
 
 PARALLEL_UPDATES = 0
 
@@ -108,6 +108,7 @@ class TMDWeatherEntity(
     def __init__(self, entry: TMDWeatherConfigEntry) -> None:
         """Use the same cached hourly data for current state and forecasts."""
         runtime = entry.runtime_data
+        self._runtime = runtime
         super().__init__(
             observation_coordinator=runtime.observation_coordinator
             or runtime.hourly_coordinator,
@@ -123,17 +124,7 @@ class TMDWeatherEntity(
     @property
     def _current(self) -> WeatherValues:
         """Return current values only while the configured source is fresh."""
-        if self._observation is not None:
-            if self._observation.data and observation_is_fresh(
-                self._observation.data, dt_util.utcnow()
-            ):
-                return self._observation.data.values
-            return WeatherValues()
-        if self._hourly.data and (
-            point := current_point(self._hourly.data, dt_util.utcnow())
-        ):
-            return point.values
-        return WeatherValues()
+        return current_values(self._runtime)
 
     @property
     def available(self) -> bool:

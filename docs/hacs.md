@@ -20,10 +20,11 @@ The rendered documentation site was blocked in this environment, so its official
 - Published GitHub Releases, not tags alone, provide release versions and normal
   update notifications. Minimum HA compatibility comes from `hacs.json`.
 
-Brand images are original community weather icons, not an official TMD logo.
-PNG icons are transparent, 256 px and 512 px for `icon@2x.png`, following current
-HA local-brand conventions. No Home Assistant brands-repository submission is
-needed for local custom-integration assets.
+Brand images use the user-supplied TMD emblem, preserved without altering the
+artwork or its white background. The original high-resolution PNG is included as
+`icon.png`, `icon@2x.png`, `logo.png` and `logo@2x.png` so Home Assistant can serve
+both icon and logo requests locally. No Home Assistant brands-repository submission
+is needed for local custom-integration assets.
 
 ## Official references inspected
 
@@ -49,8 +50,8 @@ needed for local custom-integration assets.
 
 The workflow references `hacs/action@main` and
 `home-assistant/actions/hassfest@master` as documented by the official actions.
-GitHub checkout/setup-python use verified current v6 commit pins. Dependabot
-tracks action updates. HACS PR comments are disabled so validation needs only
+GitHub checkout/setup-python use verified commit pins. Dependabot tracks action
+updates. HACS PR comments are disabled so validation needs only
 read permissions.
 
 ## Validation scope
@@ -60,13 +61,13 @@ README-presence and local-brand validators against this checkout. The official
 hassfest container validates all standalone integration plugins. Lint, typing,
 packaging/version checks and mocked Home Assistant tests also run locally.
 
-After the integration was pushed, the HACS action ran and reported eight of nine
-checks passing. The failing check is repository topics. GitHub API access now
-works and confirms an empty topics list, but updating it is rejected with
-`403: Resource not accessible by integration`. The Git credential's push permission
-does not include permission to change this repository setting. See the owner-side
-fix in [releases.md](releases.md#fixing-the-hacs-topics-check).
+An earlier HACS action reported eight of nine checks passing because repository
+topics were missing. GitHub now confirms the descriptive topics `weather`,
+`thailand` and `tmd` are present. The environment's credential previously received
+`403: Resource not accessible by integration` when editing topics; Git push
+permission does not include repository-settings access. See the owner-side
+procedure in [releases.md](releases.md#fixing-the-hacs-topics-check).
 
-CI is configured for HACS, hassfest, tests and tag/version agreement; HACS validation
-is not claimed to pass until the topics check succeeds. Actual HACS installation
-and update testing against a published repository have not been performed here.
+CI is configured for HACS, hassfest, tests and tag/version agreement. Review the
+workflow results for the commit being released. Actual HACS installation and
+update testing against a published repository have not been performed here.

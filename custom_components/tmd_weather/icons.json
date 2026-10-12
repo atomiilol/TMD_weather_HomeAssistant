@@ -6,6 +6,18 @@
       },
       "station_rainfall": {
         "default": "mdi:weather-rainy"
+      },
+      "visibility": {
+        "default": "mdi:eye"
+      },
+      "forecast_temperature_high": {
+        "default": "mdi:thermometer-chevron-up"
+      },
+      "forecast_temperature_low": {
+        "default": "mdi:thermometer-chevron-down"
+      },
+      "forecast_rainfall": {
+        "default": "mdi:weather-rainy"
       }
     }
   }
