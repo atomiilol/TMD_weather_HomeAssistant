@@ -197,6 +197,7 @@ async def test_source_switch_preserves_entities(
     [
         ("auth", "invalid_auth"),
         ("connection", "cannot_connect"),
+        ("timeout", "request_timed_out"),
         ("location", "invalid_location"),
         ("response", "invalid_response"),
         ("limit", "rate_limited"),
@@ -212,12 +213,14 @@ async def test_source_switch_failure(hass, setup_entry, mock_client, error, key)
         TMDInvalidResponseError,
         TMDRateLimitError,
         TMDServiceError,
+        TMDTimeoutError,
     )
     from custom_components.tmd_weather.const import CONF_FORECAST_SOURCE
 
     errors = {
         "auth": TMDAuthError,
         "connection": TMDConnectionError,
+        "timeout": TMDTimeoutError,
         "location": TMDInvalidLocationError,
         "response": TMDInvalidResponseError,
         "limit": TMDRateLimitError,

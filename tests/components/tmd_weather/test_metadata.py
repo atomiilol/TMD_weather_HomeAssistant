@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 
 from homeassistant import loader
+from homeassistant.helpers.translation import async_get_translations
+import pytest
 
 COMPONENT = Path(__file__).parents[3] / "custom_components/tmd_weather"
 
@@ -31,6 +33,30 @@ def test_translation_completeness():
     assert th["entity"]["sensor"]["model_hour_rain"]["name"]
 
 
+@pytest.mark.parametrize("language", ["en", "th"])
+async def test_options_translations_loaded_by_home_assistant(hass, language):
+    """Exercise HA's translation loader for the options dialog and selector."""
+    source = json.loads((COMPONENT / f"translations/{language}.json").read_text())
+    options = await async_get_translations(hass, language, "options", {"tmd_weather"})
+    selectors = await async_get_translations(
+        hass, language, "selector", {"tmd_weather"}
+    )
+    prefix = "component.tmd_weather."
+    assert (
+        options[prefix + "options.step.init.data.forecast_source"]
+        == source["options"]["step"]["init"]["data"]["forecast_source"]
+    )
+    for error in ("cannot_connect", "request_timed_out"):
+        assert (
+            options[prefix + f"options.error.{error}"]
+            == source["options"]["error"][error]
+        )
+    assert (
+        selectors[prefix + "selector.forecast_source.options.domain_2"]
+        == source["selector"]["forecast_source"]["options"]["domain_2"]
+    )
+
+
 async def test_manifest(hass):
     """Have HA load the metadata needed for UI discovery."""
     integration = await loader.async_get_integration(hass, "tmd_weather")
@@ -38,5 +64,5 @@ async def test_manifest(hass):
     assert integration.config_flow
     assert integration.manifest["integration_type"] == "service"
     assert integration.manifest["iot_class"] == "cloud_polling"
-    assert integration.manifest["version"] == "0.4.0"
+    assert integration.manifest["version"] == "0.4.1"
     assert integration.manifest["requirements"] == []

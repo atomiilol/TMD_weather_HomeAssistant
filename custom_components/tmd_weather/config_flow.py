@@ -33,6 +33,7 @@ from .api import (
     TMDInvalidResponseError,
     TMDRateLimitError,
     TMDServiceError,
+    TMDTimeoutError,
     current_point,
     location_id,
 )
@@ -57,7 +58,9 @@ def api_error_key(error: TMDAPIError | TimeoutError) -> str:
     """Map service failures to translated messages without credential details."""
     if isinstance(error, TMDAuthError):
         return "invalid_auth"
-    if isinstance(error, (TMDConnectionError, TimeoutError)):
+    if isinstance(error, (TMDTimeoutError, TimeoutError)):
+        return "request_timed_out"
+    if isinstance(error, TMDConnectionError):
         return "cannot_connect"
     if isinstance(error, TMDRateLimitError):
         return "rate_limited"

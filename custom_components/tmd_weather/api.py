@@ -14,7 +14,7 @@ from time import monotonic
 from typing import Literal
 from zoneinfo import ZoneInfo
 
-from aiohttp import ClientError, ClientSession, ClientTimeout
+from aiohttp import ClientError, ClientSession, ClientTimeout, ConnectionTimeoutError
 
 from .const import (
     DAILY_DURATION,
@@ -22,6 +22,7 @@ from .const import (
     DAILY_FIELDS,
     DEFAULT_FORECAST_SOURCE,
     DOMAIN2_ENDPOINT,
+    DOMAIN2_REQUEST_TIMEOUT,
     DOMAIN2_SEARCH_RADIUS_KM,
     FORECAST_SOURCES,
     HOURLY_DURATION,
@@ -56,7 +57,11 @@ class TMDRateLimitError(TMDAPIError):
 
 
 class TMDConnectionError(TMDAPIError):
-    """The request could not complete within the timeout."""
+    """The network connection failed or could not be established in time."""
+
+
+class TMDTimeoutError(TMDAPIError):
+    """TMD did not complete its response within the request budget."""
 
 
 class TMDInvalidResponseError(TMDAPIError):
@@ -269,6 +274,7 @@ async def async_request_json(
     params: dict[str, str | int | float],
     *,
     headers: dict[str, str] | None = None,
+    timeout: int = REQUEST_TIMEOUT,
 ) -> object:
     """Read bounded JSON from TMD without redirects or sensitive error chaining."""
     try:
@@ -276,7 +282,12 @@ async def async_request_json(
             url,
             params=params,
             headers=headers or {"Accept": "application/json"},
-            timeout=ClientTimeout(total=REQUEST_TIMEOUT),
+            timeout=ClientTimeout(
+                total=timeout,
+                connect=REQUEST_TIMEOUT,
+                sock_connect=REQUEST_TIMEOUT,
+                sock_read=timeout,
+            ),
             allow_redirects=False,
         ) as response:
             if response.status in (401, 403):
@@ -298,7 +309,11 @@ async def async_request_json(
                 payload: object = json.loads(body)
             except ValueError, UnicodeError, RecursionError:
                 raise TMDInvalidResponseError("TMD returned invalid JSON") from None
-    except ClientError, TimeoutError:
+    except ConnectionTimeoutError:
+        raise TMDConnectionError("Unable to connect to TMD") from None
+    except TimeoutError:
+        raise TMDTimeoutError("TMD response timed out") from None
+    except ClientError:
         # Legacy credentials are in query parameters; aiohttp errors can contain
         # full URLs. Never chain them or log the request/response body.
         raise TMDConnectionError("Unable to connect to TMD") from None
@@ -396,6 +411,9 @@ class TMDClient:
                     "Authorization": f"Bearer {self.token}",
                     "Accept": "application/json",
                 },
+                # TMD warns that area forecasts need more processing time.
+                # Keep connection attempts short and the complete read bounded.
+                timeout=DOMAIN2_REQUEST_TIMEOUT if area else REQUEST_TIMEOUT,
             )
         except TMDRateLimitError as error:
             self._retry_at = monotonic() + error.retry_after

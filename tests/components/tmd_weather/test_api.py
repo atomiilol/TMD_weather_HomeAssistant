@@ -6,7 +6,12 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-from aiohttp import ClientConnectionError, ClientSession
+from aiohttp import (
+    ClientConnectionError,
+    ClientSession,
+    ConnectionTimeoutError,
+    SocketTimeoutError,
+)
 import pytest
 
 from custom_components.tmd_weather.api import (
@@ -17,6 +22,7 @@ from custom_components.tmd_weather.api import (
     TMDInvalidResponseError,
     TMDRateLimitError,
     TMDServiceError,
+    TMDTimeoutError,
     _retry_delay,
     current_point,
     location_id,
@@ -35,8 +41,8 @@ def mock_all_requests(aioclient_mock):
     """Also mock caller-owned sessions used by the standalone API tests."""
     with patch(
         "aiohttp.ClientSession._request", side_effect=aioclient_mock.match_request
-    ):
-        yield
+    ) as request:
+        yield request
 
 
 def test_hourly(hourly_json):
@@ -262,13 +268,19 @@ async def test_http_errors(aioclient_mock, status, error):
 
 
 @pytest.mark.parametrize(
-    "error", [ClientConnectionError("test-secret"), TimeoutError("test-secret")]
+    "error,expected",
+    [
+        (ClientConnectionError("test-secret"), TMDConnectionError),
+        (ConnectionTimeoutError("test-secret"), TMDConnectionError),
+        (SocketTimeoutError("test-secret"), TMDTimeoutError),
+        (TimeoutError("test-secret"), TMDTimeoutError),
+    ],
 )
-async def test_network_errors(aioclient_mock, error):
+async def test_network_errors(aioclient_mock, error, expected):
     """Connection errors and timeouts expose no request internals."""
     aioclient_mock.get(NWP_BASE_URL + HOURLY_ENDPOINT, exc=error)
     async with ClientSession() as session:
-        with pytest.raises(TMDConnectionError) as caught:
+        with pytest.raises(expected) as caught:
             await TMDClient(
                 session, "test-secret", 13.75, 100.5
             ).async_get_hourly_forecast()
@@ -378,7 +390,9 @@ async def test_invalid_duration():
             await client.async_get_daily_forecast(duration=8)
 
 
-async def test_domain2_request(aioclient_mock, hourly_json, daily_json):
+async def test_domain2_request(
+    aioclient_mock, hourly_json, daily_json, mock_all_requests
+):
     """Select Domain 2 explicitly through the documented area API, preserving daily."""
     from custom_components.tmd_weather.const import DOMAIN2_ENDPOINT, HOURLY_FIELDS
 
@@ -407,6 +421,31 @@ async def test_domain2_request(aioclient_mock, hourly_json, daily_json):
     assert 100.47 < west < 100.5 < east < 100.53
     assert "lat" not in query and "date" not in query
     assert aioclient_mock.mock_calls[1][1].path.endswith(DAILY_ENDPOINT)
+    # Slow area processing gets more time, without weakening the connection
+    # bound or changing daily/observation request budgets.
+    area_timeout = mock_all_requests.call_args_list[0].kwargs["timeout"]
+    daily_timeout = mock_all_requests.call_args_list[1].kwargs["timeout"]
+    assert area_timeout.total == area_timeout.sock_read == 60
+    assert area_timeout.connect == area_timeout.sock_connect == 10
+    assert daily_timeout.total == daily_timeout.sock_read == 10
+
+
+async def test_domain2_timeout(aioclient_mock):
+    """A stalled area response reports a timeout and sends no automatic retry."""
+    from custom_components.tmd_weather.const import DOMAIN2_ENDPOINT
+
+    aioclient_mock.get(
+        NWP_BASE_URL + DOMAIN2_ENDPOINT, exc=SocketTimeoutError("test-secret")
+    )
+    async with ClientSession() as session:
+        client = TMDClient(
+            session, "test-secret", 13.75, 100.5, forecast_source="domain_2"
+        )
+        with pytest.raises(TMDTimeoutError) as caught:
+            await client.async_get_hourly_forecast(duration=1)
+    assert "test-secret" not in str(caught.value)
+    assert caught.value.__suppress_context__
+    assert aioclient_mock.call_count == 1
 
 
 def test_documented_area_example():

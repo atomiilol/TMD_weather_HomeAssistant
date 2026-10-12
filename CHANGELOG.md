@@ -3,6 +3,26 @@
 Versions follow semantic versioning. A version becomes available through HACS
 after the corresponding GitHub Release is published; a tag alone is insufficient.
 
+## 0.4.1 — 2026-10-12
+
+Requires **Home Assistant 2026.10.1 or later**.
+
+- Allow Domain 2 area forecasts up to 60 seconds to complete instead of the
+  previous 10-second limit, following TMD's warning about slower area requests.
+  Keep connection attempts limited to 10 seconds and other endpoint budgets
+  unchanged. Response size limits and rate-limit backoff still apply.
+- Report response timeouts separately from connection failures, with English and
+  Thai explanations. Failed source checks retain the saved source, fetch interval,
+  configuration and entities; no automatic retries are added.
+- Verify options labels, source selector labels and errors through Home Assistant's
+  translation loader. Document restarting and refreshing after updates to clear
+  cached translations when the dialog displays raw keys.
+
+The endpoint responded with HTTP 401 to an unauthenticated live check.
+Authenticated Domain 2 responses remain unverified in development; the timeout
+change addresses a potential cause of `cannot_connect`, rather than establishing
+the cause of every connection failure.
+
 ## 0.4.0 — 2026-10-12
 
 Requires **Home Assistant 2026.10.1 or later**.

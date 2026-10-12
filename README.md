@@ -117,6 +117,18 @@ errors leave your previous settings intact. Your coordinates, credentials,
 weather entity and supported sensor IDs are preserved, including when switching
 back to **Existing forecast source**.
 
+TMD warns that area forecasts take longer to generate. Domain 2 requests allow
+up to **60 seconds** for the response, while opening a connection remains limited
+to **10 seconds**. A response timeout is reported separately from a failed
+connection, rejected credentials or invalid forecast data. Wait for the check to
+finish before retrying; failed checks keep your previous source and interval.
+
+If the dialog shows raw labels such as `forecast_source`, `domain_2` or
+`cannot_connect`, update the integration in HACS and **restart Home Assistant**,
+then refresh the browser page (or close and reopen the app). Home Assistant and
+the frontend cache integration translations. The dialog includes English and
+Thai labels and error explanations.
+
 Domain 2 changes **modeled current conditions and hourly forecasts**. If station
 observations are configured, they remain the source of current measurements.
 To use modeled Domain 2 values for current weather too, use **Reconfigure** and
@@ -402,7 +414,7 @@ uv run --frozen pytest tests/components/tmd_weather --cov --cov-report=term-miss
 uv run --frozen ruff check custom_components tests script
 uv run --frozen ruff format --check custom_components tests script
 uv run --frozen mypy custom_components/tmd_weather script/check_release.py
-uv run --frozen python script/check_release.py --tag v0.4.0
+uv run --frozen python script/check_release.py --tag v0.4.1
 ```
 
 `uv.lock` pins development dependencies, including HA 2026.10.1. Tests use real

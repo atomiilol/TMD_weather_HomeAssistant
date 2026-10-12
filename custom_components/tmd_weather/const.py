@@ -32,6 +32,7 @@ DAILY_FIELDS: Final = "tc_max,tc_min,rh,slp,rain,ws10m,wd10m,cond"
 HOURLY_DURATION: Final = 48
 DAILY_DURATION: Final = 7
 REQUEST_TIMEOUT: Final = 10
+DOMAIN2_REQUEST_TIMEOUT: Final = 60
 MAX_RESPONSE_BYTES: Final = 2 * 1024 * 1024
 HOURLY_UPDATE_INTERVAL: Final = timedelta(hours=1)
 DAILY_UPDATE_INTERVAL: Final = timedelta(hours=3)

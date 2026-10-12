@@ -16,6 +16,7 @@ from custom_components.tmd_weather.api import (
     TMDInvalidResponseError,
     TMDRateLimitError,
     TMDServiceError,
+    TMDTimeoutError,
 )
 from custom_components.tmd_weather.const import DOMAIN
 
@@ -72,7 +73,8 @@ async def test_duplicate(hass, mock_client, config_entry):
     [
         (TMDAuthError, "invalid_auth"),
         (TMDConnectionError, "cannot_connect"),
-        (TimeoutError, "cannot_connect"),
+        (TimeoutError, "request_timed_out"),
+        (TMDTimeoutError, "request_timed_out"),
         (TMDRateLimitError, "rate_limited"),
         (TMDInvalidLocationError, "invalid_location"),
         (TMDInvalidResponseError, "invalid_response"),
