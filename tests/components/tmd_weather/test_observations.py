@@ -335,7 +335,7 @@ async def test_reconfigure_preserves_entities(
         for entry in entity_registry.entities.values()
         if entry.config_entry_id == setup_entry.entry_id
     }
-    assert old == new
+    assert old.items() <= new.items()
 
 
 async def test_disable_observations(hass, station_setup):

@@ -19,14 +19,6 @@ def sensor_id(entity_registry, entry, key):
     )
 
 
-@pytest.fixture
-def current_entry(request, source):
-    """Resolve the selected async setup fixture before entering the test loop."""
-    return request.getfixturevalue(
-        "station_setup" if source == "station" else "setup_entry"
-    )
-
-
 @pytest.mark.parametrize("source", ["model", "station"])
 @pytest.mark.parametrize(
     "key,modeled,observed,unit,device_class,state_class",
@@ -56,12 +48,12 @@ async def test_current_measurements(
     """Expose source values, native units and appropriate statistics in real HA."""
     entry = current_entry
     entity_id = sensor_id(entity_registry, entry, key)
-    state = hass.states.get(entity_id)
     expected = observed if source == "station" else modeled
     if expected == STATE_UNKNOWN:
-        assert state.state == STATE_UNKNOWN
-    else:
-        assert float(state.state) == float(expected)
+        assert entity_id is None
+        return
+    state = hass.states.get(entity_id)
+    assert float(state.state) == float(expected)
     assert state.attributes["unit_of_measurement"] == unit
     assert state.attributes["device_class"] == device_class
     assert state.attributes.get("state_class") == state_class
@@ -174,7 +166,10 @@ async def test_expired_source(hass, current_entry, entity_registry, source, free
         "visibility",
         "model_hour_rain",
     ):
-        entity = hass.data["sensor"].get_entity(sensor_id(entity_registry, entry, key))
+        entity_id = sensor_id(entity_registry, entry, key)
+        if entity_id is None:
+            continue
+        entity = hass.data["sensor"].get_entity(entity_id)
         assert not entity.available
         assert entity.native_value is None
 
@@ -205,7 +200,7 @@ async def test_shared_update(hass, setup_entry, entity_registry, mock_client):
 
 
 async def test_missing_optional_measurement(hass, setup_entry, entity_registry):
-    """An omitted reading stays unknown while the valid current source is available."""
+    """A temporary gap is unavailable, retaining a supported reading for recovery."""
     hourly = setup_entry.runtime_data.hourly_coordinator
     data = hourly.data
     point = data.points[0]
@@ -218,7 +213,7 @@ async def test_missing_optional_measurement(hass, setup_entry, entity_registry):
     await hass.async_block_till_done()
     assert (
         hass.states.get(sensor_id(entity_registry, setup_entry, "humidity")).state
-        == STATE_UNKNOWN
+        == STATE_UNAVAILABLE
     )
     assert (
         hass.states.get(sensor_id(entity_registry, setup_entry, "temperature")).state
@@ -259,4 +254,92 @@ async def test_existing_entities_survive_upgrade(
     )
     assert hass.states.get(rainfall.entity_id) is None
     assert hass.states.get(sensor_id(entity_registry, config_entry, "temperature"))
-    assert len(hass.states.async_entity_ids("sensor")) == 10
+    assert len(hass.states.async_entity_ids("sensor")) == 8
+
+
+async def test_cleanup_legacy_unsupported_sensors(
+    hass, config_entry, mock_client, entity_registry
+):
+    """Remove the old modeled placeholders while retaining weather and forecasts."""
+    config_entry.add_to_hass(hass)
+    old_ids = []
+    for key in ("dew_point", "visibility"):
+        old_ids.append(
+            entity_registry.async_get_or_create(
+                "sensor",
+                DOMAIN,
+                f"{config_entry.unique_id}_{key}",
+                config_entry=config_entry,
+            ).entity_id
+        )
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    for entity_id in old_ids:
+        assert entity_registry.async_get(entity_id) is None
+        assert hass.states.get(entity_id) is None
+    assert hass.states.async_entity_ids("weather")
+    assert hass.states.get(
+        sensor_id(entity_registry, config_entry, "forecast_rainfall")
+    )
+
+
+async def test_discover_later_measurement(
+    hass, config_entry, mock_client, entity_registry
+):
+    """Skip absent initial fields, add them once supplied, and retain IDs on gaps."""
+    original = mock_client.async_get_hourly_forecast.return_value
+    mock_client.async_get_hourly_forecast.return_value = replace(
+        original,
+        points=tuple(
+            replace(point, values=replace(point.values, pressure=None))
+            for point in original.points
+        ),
+    )
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert sensor_id(entity_registry, config_entry, "pressure") is None
+    coordinator = config_entry.runtime_data.hourly_coordinator
+    coordinator.async_set_updated_data(original)
+    await hass.async_block_till_done()
+    entity_id = sensor_id(entity_registry, config_entry, "pressure")
+    assert hass.states.get(entity_id).state == "1008.4"
+    coordinator.async_set_updated_data(
+        replace(
+            original,
+            points=tuple(
+                replace(point, values=replace(point.values, pressure=None))
+                for point in original.points
+            ),
+        )
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).state == STATE_UNAVAILABLE
+    assert sensor_id(entity_registry, config_entry, "pressure") == entity_id
+    coordinator.async_set_updated_data(original)
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).state == "1008.4"
+    assert sensor_id(entity_registry, config_entry, "pressure") == entity_id
+
+
+async def test_discover_later_forecast_field(
+    hass, config_entry, mock_client, entity_registry
+):
+    """Forecast fields without supplied values are also deferred until available."""
+    original = mock_client.async_get_daily_forecast.return_value
+    mock_client.async_get_daily_forecast.return_value = replace(
+        original,
+        points=tuple(
+            replace(point, values=replace(point.values, temperature_low=None))
+            for point in original.points
+        ),
+    )
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    assert sensor_id(entity_registry, config_entry, "forecast_temperature_low") is None
+    coordinator = config_entry.runtime_data.daily_coordinator
+    coordinator.async_set_updated_data(original)
+    await hass.async_block_till_done()
+    entity_id = sensor_id(entity_registry, config_entry, "forecast_temperature_low")
+    assert float(hass.states.get(entity_id).state) == 25

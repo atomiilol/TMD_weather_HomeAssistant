@@ -115,5 +115,22 @@
     "update_failed": {
       "message": "Unable to update TMD forecast data. Home Assistant will retry automatically."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure weather fetching",
+        "description": "Choose how often to fetch current weather and forecasts, in minutes. More frequent fetching does not make TMD publish new data sooner. API rate-limit backoff still applies.",
+        "data": {
+          "fetch_interval": "Weather fetch interval (minutes)"
+        },
+        "data_description": {
+          "fetch_interval": "A whole number from 1 to 1440 minutes. Applies to current conditions, hourly forecasts and daily forecasts. Your location and entity IDs are preserved."
+        }
+      }
+    },
+    "error": {
+      "invalid_fetch_interval": "Enter a whole number from 1 to 1440 minutes."
+    }
   }
 }

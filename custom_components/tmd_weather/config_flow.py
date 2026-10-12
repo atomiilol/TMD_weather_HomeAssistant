@@ -3,10 +3,21 @@
 from collections.abc import Mapping
 from typing import Any
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE
+from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+)
 from homeassistant.util import dt as dt_util
 import probatio
 
@@ -22,7 +33,17 @@ from .api import (
     current_point,
     location_id,
 )
-from .const import CONF_ACCESS_TOKEN, CONF_OBSERVATION_KEY, CONF_OBSERVATION_UID, DOMAIN
+from .const import (
+    CONF_ACCESS_TOKEN,
+    CONF_FETCH_INTERVAL,
+    CONF_OBSERVATION_KEY,
+    CONF_OBSERVATION_UID,
+    DOMAIN,
+    HOURLY_UPDATE_INTERVAL,
+    MAX_FETCH_INTERVAL,
+    MIN_FETCH_INTERVAL,
+    OBSERVATION_UPDATE_INTERVAL,
+)
 from .observations import TMDObservationClient
 
 
@@ -30,6 +51,12 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
     """One stable entry per requested model coordinate, regardless of token."""
 
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        """Allow polling changes without replacing a location or credentials."""
+        return TMDWeatherOptionsFlow()
 
     async def _validate(self, data: Mapping[str, Any]) -> str | None:
         """Verify a current hourly sample and a daily sample with bounded calls."""
@@ -189,4 +216,58 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
                     probatio.Optional(probatio.Secret(CONF_OBSERVATION_KEY)): str,
                 }
             ),
+        )
+
+
+class TMDWeatherOptionsFlow(OptionsFlow):
+    """Set the weather-data polling interval in whole minutes."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Save a bounded interval and let the entry listener apply it."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            minutes = user_input.get(CONF_FETCH_INTERVAL)
+            if (
+                isinstance(minutes, bool)
+                or not isinstance(minutes, (int, float))
+                or not MIN_FETCH_INTERVAL <= minutes <= MAX_FETCH_INTERVAL
+                or int(minutes) != minutes
+            ):
+                errors[CONF_FETCH_INTERVAL] = "invalid_fetch_interval"
+            else:
+                return self.async_create_entry(
+                    title="",
+                    data={
+                        **self.config_entry.options,
+                        CONF_FETCH_INTERVAL: int(minutes),
+                    },
+                )
+        default = (
+            OBSERVATION_UPDATE_INTERVAL
+            if self.config_entry.data.get(CONF_OBSERVATION_UID)
+            else HOURLY_UPDATE_INTERVAL
+        )
+        return self.async_show_form(
+            step_id="init",
+            data_schema=probatio.Schema(
+                {
+                    probatio.Required(
+                        CONF_FETCH_INTERVAL,
+                        default=self.config_entry.options.get(
+                            CONF_FETCH_INTERVAL, int(default.total_seconds() / 60)
+                        ),
+                    ): NumberSelector(
+                        NumberSelectorConfig(
+                            min=MIN_FETCH_INTERVAL,
+                            max=MAX_FETCH_INTERVAL,
+                            step=1,
+                            mode=NumberSelectorMode.BOX,
+                            unit_of_measurement="min",
+                        )
+                    ),
+                }
+            ),
+            errors=errors,
         )

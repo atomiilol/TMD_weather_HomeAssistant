@@ -11,7 +11,7 @@ from script.check_release import ROOT, release_notes, validate
 
 def test_release_and_hacs_layout():
     """The proposed release has one integration and uses standard HACS refs."""
-    assert validate(tag="v0.2.0") == "0.2.0"
+    assert validate(tag="v0.3.0") == "0.3.0"
     hacs = json.loads((ROOT / "hacs.json").read_text())
     assert hacs["name"] == "Thai Meteorological Department (TMD)"
     assert hacs["country"] == "TH"
@@ -42,7 +42,7 @@ def release_copy(tmp_path):
 def test_project_version_mismatch(release_copy):
     """Do not distribute divergent project and integration versions."""
     path = release_copy / "pyproject.toml"
-    path.write_text(path.read_text().replace('version = "0.2.0"', 'version = "0.3.0"'))
+    path.write_text(path.read_text().replace('version = "0.3.0"', 'version = "0.4.0"'))
     with pytest.raises(ValueError, match="versions differ"):
         validate(release_copy)
 
@@ -61,20 +61,23 @@ def test_missing_brand(release_copy):
         validate(release_copy)
 
 
-def test_release_notes():
-    """Published notes describe this version and disclose compatibility/limitations."""
-    notes = release_notes()
-    assert "First published release" in notes
-    assert "Home Assistant 2026.10.1" in notes
-    assert "NWP forecasts remain experimental" in notes
-    assert "separate current temperature" in notes
-    assert "## 0.1.0" not in notes
-    assert "UI setup, reauthentication" not in notes
+def test_release_notes(release_copy):
+    """Publish only current notes, independent of earlier release descriptions."""
+    version = validate(release_copy)
+    (release_copy / "CHANGELOG.md").write_text(
+        f"# Changelog\n\n## {version} — today\n\nCurrent release changes.\n"
+        "\nRequires Home Assistant 2026.10.1.\n\n## 0.0.1 — earlier\n\nOld changes.\n"
+    )
+    notes = release_notes(release_copy)
+    assert notes == "Current release changes.\n\nRequires Home Assistant 2026.10.1.\n"
+    assert "Old changes" not in notes
 
 
 def test_empty_release_notes(release_copy):
     """Do not publish a release with a heading but no useful notes."""
-    (release_copy / "CHANGELOG.md").write_text("# Changelog\n\n## 0.2.0 — today\n")
+    (release_copy / "CHANGELOG.md").write_text(
+        f"# Changelog\n\n## {validate(release_copy)} — today\n"
+    )
     with pytest.raises(ValueError, match="must not be empty"):
         release_notes(release_copy)
 

@@ -20,13 +20,14 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_track_utc_time_change
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .api import BANGKOK, ForecastPoint, WeatherValues
-from .const import ATTRIBUTION
+from .const import ATTRIBUTION, DOMAIN
 from .coordinator import (
     TMDDailyForecastDataUpdateCoordinator,
     TMDHourlyForecastDataUpdateCoordinator,
@@ -44,6 +45,7 @@ class TMDSensorDescription(SensorEntityDescription):
     """Describe a supported measurement without coupling it to API payloads."""
 
     value_fn: Callable[[WeatherValues], float | None]
+    station_only: bool = False
 
 
 CURRENT_SENSORS: tuple[TMDSensorDescription, ...] = (
@@ -97,6 +99,7 @@ CURRENT_SENSORS: tuple[TMDSensorDescription, ...] = (
     ),
     TMDSensorDescription(
         key="dew_point",
+        station_only=True,
         translation_key="dew_point",
         device_class=SensorDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -105,6 +108,7 @@ CURRENT_SENSORS: tuple[TMDSensorDescription, ...] = (
     ),
     TMDSensorDescription(
         key="visibility",
+        station_only=True,
         translation_key="visibility",
         device_class=SensorDeviceClass.DISTANCE,
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
@@ -144,10 +148,73 @@ async def async_setup_entry(
     entry: TMDWeatherConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Expose supported readings without additional API requests."""
-    async_add_entities(
-        [TMDCurrentSensor(entry, description) for description in CURRENT_SENSORS]
-        + [TMDDailySensor(entry, description) for description in DAILY_SENSORS]
+    """Add supported readings, including newly supplied values on later updates."""
+    runtime = entry.runtime_data
+    registry = er.async_get(hass)
+    source = runtime.observation_coordinator or runtime.hourly_coordinator
+    created_current: set[str] = set()
+    created_daily: set[str] = set()
+    unsupported = {
+        description.key
+        for description in CURRENT_SENSORS
+        if description.station_only and runtime.observation_coordinator is None
+    }
+    # Clean up only fields the selected source cannot provide. Transient gaps in
+    # supported readings must not remove an entity's customized identity/history.
+    for key in unsupported:
+        if entity_id := registry.async_get_entity_id(
+            "sensor", DOMAIN, f"{entry.unique_id}_{key}"
+        ):
+            registry.async_remove(entity_id)
+
+    @callback
+    def add_current_sensors() -> None:
+        """Discover available fields while preserving previously supported sensors."""
+        if not source.last_update_success:
+            return
+        values = current_values(runtime)
+        entities = []
+        for description in CURRENT_SENSORS:
+            if description.key in unsupported or description.key in created_current:
+                continue
+            if description.value_fn(
+                values
+            ) is None and not registry.async_get_entity_id(
+                "sensor", DOMAIN, f"{entry.unique_id}_{description.key}"
+            ):
+                continue
+            entities.append(TMDCurrentSensor(entry, description))
+            created_current.add(description.key)
+        if entities:
+            async_add_entities(entities)
+
+    @callback
+    def add_daily_sensors() -> None:
+        """Discover forecast fields across the cached forecast horizon."""
+        daily = runtime.daily_coordinator
+        if not daily.last_update_success or not daily.data:
+            return
+        entities = []
+        for description in DAILY_SENSORS:
+            if description.key in created_daily:
+                continue
+            if not any(
+                description.value_fn(point.values) is not None
+                for point in daily.data.points
+            ) and not registry.async_get_entity_id(
+                "sensor", DOMAIN, f"{entry.unique_id}_{description.key}"
+            ):
+                continue
+            entities.append(TMDDailySensor(entry, description))
+            created_daily.add(description.key)
+        if entities:
+            async_add_entities(entities)
+
+    add_current_sensors()
+    add_daily_sensors()
+    entry.async_on_unload(source.async_add_listener(add_current_sensors))
+    entry.async_on_unload(
+        runtime.daily_coordinator.async_add_listener(add_daily_sensors)
     )
 
 
@@ -189,7 +256,9 @@ class TMDCurrentSensor(
     def available(self) -> bool:
         """Follow current-source update success and freshness."""
         return (
-            super().available and current_values(self._runtime).temperature is not None
+            super().available
+            and current_values(self._runtime).temperature is not None
+            and self.native_value is not None
         )
 
     @property
@@ -264,7 +333,7 @@ class TMDDailySensor(
     @property
     def available(self) -> bool:
         """Daily failures affect only these predictions, not current measurements."""
-        return super().available and self._today is not None
+        return super().available and self.native_value is not None
 
     @property
     def extra_state_attributes(self) -> dict[str, str]:

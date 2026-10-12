@@ -131,3 +131,11 @@ async def setup_entry(hass, config_entry, mock_client):
     assert await hass.config_entries.async_setup(config_entry.entry_id)
     await hass.async_block_till_done()
     return config_entry
+
+
+@pytest.fixture
+def current_entry(request, source):
+    """Resolve the selected async setup fixture before entering the test loop."""
+    return request.getfixturevalue(
+        "station_setup" if source == "station" else "setup_entry"
+    )

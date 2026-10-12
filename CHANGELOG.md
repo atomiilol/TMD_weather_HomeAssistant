@@ -3,6 +3,29 @@
 Versions follow semantic versioning. A version becomes available through HACS
 after the corresponding GitHub Release is published; a tag alone is insufficient.
 
+## 0.3.0 — 2026-10-12
+
+Requires **Home Assistant 2026.10.1 or later**.
+
+- Remove unsupported sensor placeholders, including dew point and visibility in
+  modeled mode, and clean up their old registry entries automatically.
+- Defer new sensors until TMD supplies a value. Add them automatically when a
+  later update provides data. Supported sensors with temporary gaps become
+  unavailable and recover using their existing IDs.
+- Keep the main weather entity and its forecasts, including TMD's unknown
+  sky-condition state when no condition code is supplied.
+- Add **Configure → Weather fetch interval (minutes)**, accepting whole numbers
+  from 1 to 1440. The saved option applies to current conditions and active
+  hourly/daily forecast polling and persists across restarts. Existing schedules
+  are retained until configured; server rate-limit backoff still applies.
+- Preserve location configuration, credentials and supported entity IDs when
+  applying options. Include active polling intervals in redacted diagnostics.
+- Advance cached model hours and expire stale station measurements between fetches,
+  so long intervals cannot leave old current values displayed as fresh weather.
+
+Authenticated production NWP forecasts remain experimental and need validation
+with a user-owned token. Weather3Hours supplies no observed sky-condition code.
+
 ## 0.2.0 — 2026-10-12
 
 First published release. Includes UI configuration, station or explicitly modeled

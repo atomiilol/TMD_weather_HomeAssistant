@@ -11,6 +11,9 @@ CONF_ACCESS_TOKEN: Final = "access_token"
 CURRENT_SOURCE: Final = "nwp_model"
 CONF_OBSERVATION_UID: Final = "observation_uid"
 CONF_OBSERVATION_KEY: Final = "observation_key"
+CONF_FETCH_INTERVAL: Final = "fetch_interval"
+MIN_FETCH_INTERVAL: Final = 1
+MAX_FETCH_INTERVAL: Final = 1440
 OBSERVATION_SOURCE: Final = "station"
 OBSERVATION_URL: Final = "https://data.tmd.go.th/api/Weather3Hours/V2/"
 OBSERVATION_UPDATE_INTERVAL: Final = timedelta(minutes=30)

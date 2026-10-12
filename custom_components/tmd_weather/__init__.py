@@ -1,8 +1,11 @@
 """Thai Meteorological Department custom weather integration."""
 
+from datetime import datetime
+
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_track_utc_time_change
 
 from .api import TMDClient
 from .const import CONF_ACCESS_TOKEN, CONF_OBSERVATION_KEY, CONF_OBSERVATION_UID
@@ -47,7 +50,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: TMDWeatherConfigEntry) -
         await observation.async_config_entry_first_refresh()
     entry.runtime_data = TMDWeatherData(client, hourly, daily, observation)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+
+    @callback
+    def update_cached_current(now: datetime) -> None:
+        """Advance model hours and expire station data between configured fetches."""
+        (observation or hourly).async_update_listeners()
+
+    entry.async_on_unload(
+        async_track_utc_time_change(hass, update_cached_current, second=0)
+    )
     return True
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: TMDWeatherConfigEntry) -> None:
+    """Apply options using the same configuration and entity identities."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: TMDWeatherConfigEntry) -> bool:

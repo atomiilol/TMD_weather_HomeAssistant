@@ -55,6 +55,16 @@ async def async_get_config_entry_diagnostics(
     station = observation.data if observation is not None else None
     return {
         "config": async_redact_data(dict(config_entry.data), TO_REDACT),
+        "fetch_intervals_minutes": {
+            name: coordinator.update_interval.total_seconds() / 60
+            if coordinator is not None and coordinator.update_interval is not None
+            else None
+            for name, coordinator in (
+                ("hourly", runtime.hourly_coordinator),
+                ("daily", runtime.daily_coordinator),
+                ("observations", observation),
+            )
+        },
         "current_source": OBSERVATION_SOURCE
         if observation is not None
         else CURRENT_SOURCE,

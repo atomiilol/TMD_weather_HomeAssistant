@@ -150,7 +150,7 @@ async def test_device_identity(hass, setup_entry, device_registry, entity_regist
         for entry in entity_registry.entities.values()
         if entry.config_entry_id == setup_entry.entry_id
     ]
-    assert len(entities) == 12
+    assert len(entities) == 10
     assert all(entry.device_id == device.id for entry in entities)
 
 

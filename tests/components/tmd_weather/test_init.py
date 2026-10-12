@@ -11,7 +11,7 @@ async def test_setup_and_unload(hass, setup_entry, mock_client):
     """Set up both datasets once, create both platforms and unload cleanly."""
     assert setup_entry.state == ConfigEntryState.LOADED
     assert len(hass.states.async_entity_ids("weather")) == 1
-    assert len(hass.states.async_entity_ids("sensor")) == 11
+    assert len(hass.states.async_entity_ids("sensor")) == 9
     mock_client.async_get_hourly_forecast.assert_awaited_once_with()
     mock_client.async_get_daily_forecast.assert_awaited_once_with()
     hourly = setup_entry.runtime_data.hourly_coordinator

@@ -13,7 +13,7 @@ now accessible; authenticated NWP forecast payloads remain unverified.
 - **Authentication:** documented NWP bearer contract, user-entered token, shared HA
   aiohttp session, no redirects. No refresh grant is invented; observation
   credentials are not assumed interchangeable.
-- **Polling:** observations 30 minutes, hourly 60 minutes; daily 3 hours while subscribed, or on demand
+- **Polling:** default observations 30 minutes, hourly 60 minutes and daily 180 minutes; a per-location options flow sets an interval of 1–1440 whole minutes for active datasets
   when stale. Conservative choices below the documented quotas; model publication
   cadence is not established.
   Server Retry-After takes precedence; no custom retry loops.

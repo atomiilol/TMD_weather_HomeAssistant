@@ -16,6 +16,7 @@ from homeassistant.helpers.update_coordinator import (
 
 from .api import ForecastData, TMDAPIError, TMDAuthError, TMDClient, TMDRateLimitError
 from .const import (
+    CONF_FETCH_INTERVAL,
     CONF_OBSERVATION_UID,
     DAILY_UPDATE_INTERVAL,
     DOMAIN,
@@ -26,6 +27,13 @@ from .const import (
 from .observations import StationObservation, TMDObservationClient
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def polling_interval(entry: TMDWeatherConfigEntry, default: timedelta) -> timedelta:
+    """Use the saved minute interval, retaining legacy schedules until configured."""
+    if (minutes := entry.options.get(CONF_FETCH_INTERVAL)) is not None:
+        return timedelta(minutes=minutes)
+    return default
 
 
 @dataclass(slots=True)
@@ -77,7 +85,7 @@ class TMDForecastDataUpdateCoordinator(TimestampDataUpdateCoordinator[ForecastDa
             _LOGGER,
             config_entry=entry,
             name=f"{DOMAIN} {name}",
-            update_interval=interval,
+            update_interval=polling_interval(entry, interval),
             always_update=always_update,
         )
         self._fetch = fetch
@@ -116,13 +124,13 @@ class TMDObservationDataUpdateCoordinator(
         entry: TMDWeatherConfigEntry,
         client: TMDObservationClient,
     ) -> None:
-        """Poll every 30 minutes for the three-hour station publication cadence."""
+        """Poll at the configured interval, defaulting to every 30 minutes."""
         super().__init__(
             hass,
             _LOGGER,
             config_entry=entry,
             name=f"{DOMAIN} observations",
-            update_interval=OBSERVATION_UPDATE_INTERVAL,
+            update_interval=polling_interval(entry, OBSERVATION_UPDATE_INTERVAL),
             always_update=True,
         )
         self.client = client

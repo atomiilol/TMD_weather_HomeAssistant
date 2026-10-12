@@ -41,7 +41,9 @@ timestamped weather coordinators. Future releases still need compatibility testi
 
 ## Separate sensor entities
 
-Each configured location has one weather entity and eleven sensor entities.
+Each configured location has one weather entity and sensors for the measurements
+TMD supplies. A full station dataset provides eleven sensors; modeled weather
+normally provides nine because its source has no dew point or visibility.
 Use the sensors directly in dashboards, automations and history, as with
 AccuWeather's separate measurement entities. Find them under **Settings → Devices
 & services → Thai Meteorological Department (TMD)** and open your location's device.
@@ -62,9 +64,11 @@ AccuWeather's separate measurement entities. Find them under **Settings → Devi
 
 Current sensors use the same station or modeled values as the weather entity.
 Their `data_source` attribute identifies `station` or `nwp_model`; they never switch
-sources during outages. Dew point and visibility remain **unknown** without station
-observations. Other optional measurements also remain unknown when TMD omits them.
-Expired data or a failed update makes that source's sensors **unavailable**.
+sources during outages. Dew point and visibility sensors are omitted without
+station observations. New optional sensors are added only after TMD supplies
+values, including when they first appear in a later update. Missing readings on
+previously supported sensors, expired data or a failed update make those sensors
+**unavailable**, while preserving their IDs for recovery.
 
 Forecast sensors explicitly identify `nwp_forecast` and a `forecast_date`. "Today"
 uses Thailand's **Asia/Bangkok** calendar. A daily forecast failure affects these
@@ -73,9 +77,34 @@ do not collect cumulative or measurement statistics; current measurement sensors
 use Home Assistant's measurement statistics, including circular wind-direction
 statistics. Home Assistant handles supported display-unit conversions.
 
-Upgrading to 0.2.0 adds the new sensors automatically after restarting Home
-Assistant. Your location configuration and existing weather/rainfall entity IDs
-are preserved. Disable any unwanted sensors using Home Assistant's entity controls.
+Upgrading to 0.3.0 automatically removes old dew point/visibility placeholders
+from modeled locations. Your location configuration, weather entity, forecasts
+and supported sensor IDs are preserved. The weather entity can still show an
+unknown sky condition when TMD supplies no condition code. Disable any unwanted
+supported sensors using Home Assistant's entity controls.
+
+## Configure the fetch interval
+
+1. Open **Settings → Devices & services → Thai Meteorological Department (TMD)**.
+2. Select **Configure** for the location you want to change.
+3. Set **Weather fetch interval (minutes)** to a whole number from **1 to 1440**.
+4. Select **Submit**. The setting takes effect automatically; it also survives
+   Home Assistant restarts. You do not need to re-enter credentials.
+
+The interval applies to current conditions and active hourly/daily forecast
+polling. Sensors share those caches, so each sensor does not make its own request.
+Until you save an interval, the original defaults remain: modeled/hourly data
+every 60 minutes, station observations every 30 minutes, and daily forecasts every
+180 minutes. The options dialog starts at 60 minutes for modeled locations or 30
+minutes for station locations. Saving a value sets that same interval for all
+active datasets. Hourly forecasts in station mode also refresh on demand when no
+dashboard subscribes to them.
+
+Polling more often does not make TMD publish fresh data sooner. Authentication
+handling, request timeouts and the existing server rate-limit backoff continue to
+apply at every interval.
+Cached modeled values still advance as the model hour changes, and expired station
+measurements become unavailable between fetches. These checks make no API requests.
 
 ## Installation
 
@@ -178,10 +207,10 @@ IDs are preserved. Reauthentication can replace the NWP token and/or legacy pair
 
 | Dataset | Official source | Implementation |
 | --- | --- | --- |
-| Current station weather | `https://data.tmd.go.th/api/Weather3Hours/V2/` | Nearest fresh station; refresh every 30 minutes |
+| Current station weather | `https://data.tmd.go.th/api/Weather3Hours/V2/` | Nearest fresh station; 30-minute default, configurable |
 | Modeled current weather | Current NWP hourly timestep | Used only when observation credentials are absent |
-| Hourly forecast | `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at` | Request 48 hours; refresh every hour |
-| Daily forecast | `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at` | Request 7 days; refresh every 3 hours when subscribed, or on demand when stale |
+| Hourly forecast | `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at` | Request 48 hours; 60-minute default, configurable; on demand without subscribers |
+| Daily forecast | `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at` | Request 7 days; 180-minute default, configurable; on demand when stale |
 | Other observations | WeatherToday / station catalog | Researched; Weather3Hours already includes the metadata needed for station selection |
 
 Observed current conditions use a separate coordinator from hourly/daily forecasts.
@@ -199,13 +228,13 @@ moving the forecast coordinate or changing entity IDs. No separate station-list
 download is needed on every refresh.
 
 Fresh attribute/forecast reads make no extra request. With entities enabled and a
-daily subscriber, normal scheduled traffic is about 24 hourly + 8 daily requests
+daily subscriber, default scheduled traffic is about 24 hourly + 8 daily requests
 per day, plus validation/setup, manual refreshes and failure retries. These are
 conservative polling choices, independent of model publication cadence. TMD's guide
 documents **60 requests/minute and 100,000 datapoints/hour**, where datapoints are
 locations × duration × fields. Its later header descriptions inconsistently say
 "hour" for the request limit, so deployments should honor actual server limits.
-Observation mode adds approximately 48 observation requests/day; its quota is not
+Observation mode adds approximately 48 observation requests/day by default; its quota is not
 specified in the inspected legacy reference. HA handles retries. NWP HTTP 429
 honors `Retry-After` for both forecast endpoints of that entry;
 an absent/invalid header defaults to one hour. The client never loops or sleeps.
@@ -251,7 +280,8 @@ October 11/12 rollover. It does not mistake them for the offset-aware NWP format
 
 Current rainfall uses a sensor because HA's current-weather entity has no
 `native_precipitation` property; forecast dictionaries do. Missing/null/invalid
-optional values remain unknown. NWP booleans, numeric strings and nonfinite numbers
+optional values are not fabricated. Sensors omit unsupported fields and mark
+temporarily missing readings unavailable. NWP booleans, numeric strings and nonfinite numbers
 are not treated as JSON numeric measurements; legacy numeric strings are parsed
 according to the verified observation schema. Missing structure, timezone offsets,
 duplicate times or an entirely unusable temperature series fail the update.
@@ -297,8 +327,8 @@ The integration does not borrow a forecast icon and label it as an observation.
   raw authenticated requests.
 - **Service unavailable / HTTP 404:** an endpoint may have changed; it is not
   silently treated as a bad token or replaced with fabricated data.
-- No options flow is needed for this version. Disable unwanted sensors through
-  HA's entity controls if unwanted.
+- Change polling through the integration's **Configure** button. Disable unwanted
+  supported sensors through HA's entity controls.
 
 ## Updates through HACS
 
@@ -332,7 +362,7 @@ uv run --frozen pytest tests/components/tmd_weather --cov --cov-report=term-miss
 uv run --frozen ruff check custom_components tests script
 uv run --frozen ruff format --check custom_components tests script
 uv run --frozen mypy custom_components/tmd_weather script/check_release.py
-uv run --frozen python script/check_release.py --tag v0.2.0
+uv run --frozen python script/check_release.py --tag v0.3.0
 ```
 
 `uv.lock` pins development dependencies, including HA 2026.10.1. Tests use real
