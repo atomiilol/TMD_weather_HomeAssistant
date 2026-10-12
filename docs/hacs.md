@@ -69,5 +69,7 @@ permission does not include repository-settings access. See the owner-side
 procedure in [releases.md](releases.md#fixing-the-hacs-topics-check).
 
 CI is configured for HACS, hassfest, tests and tag/version agreement. Review the
-workflow results for the commit being released. Actual HACS installation and
+workflow results for the commit being released. Version tags run those validations
+before publishing GitHub releases used by HACS for update detection. Actual HACS
+installation and
 update testing against a published repository have not been performed here.

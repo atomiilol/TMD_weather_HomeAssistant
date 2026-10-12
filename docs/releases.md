@@ -1,7 +1,8 @@
 # Releases and repository metadata
 
-The current version is **0.2.0**, prepared for review. Nothing in this task creates
-or pushes a Git tag or publishes a GitHub Release.
+The release version is **0.2.0**. Published versions are listed in
+[GitHub Releases](https://github.com/atomiilol/TMD_weather_HomeAssistant/releases).
+HACS uses the latest published release tag as the available update version.
 
 ## GitHub repository settings
 
@@ -52,13 +53,22 @@ and the validation check should remain enabled.
    that would make HACS install the wrong directory.
 4. Commit and push the reviewed changes. Wait for **Tests**, **HACS validation**
    and **Hassfest validation** to pass on GitHub; fix actual failures.
-5. In GitHub's **Releases**, create and publish a release with tag `v0.2.0`
-   (or the matching later version) pointing to that tested commit. Copy the
-   version's changelog into the release notes. Use GitHub's pre-release flag for
-   releases intended only for testing.
-6. The tag-push workflow also checks tag/manifest/project/changelog agreement.
-   Verify its result before announcing the release. A Git tag by itself does
-   not provide the published-release version that HACS users expect.
+5. Create an annotated version tag on the tested commit, then push that tag:
+
+   ```sh
+   git tag -a v0.2.0 -m "Release v0.2.0" <tested-commit-sha>
+   git push origin v0.2.0
+   ```
+
+   Use the next semantic version for subsequent releases; never move or reuse
+   a published version tag.
+6. The **Publish GitHub release** workflow checks tag/manifest/project/changelog
+   agreement and runs the reusable tests, HACS and Hassfest workflows on the
+   tagged commit. Only if all succeed does it publish a non-draft, non-prerelease
+   GitHub release, mark it latest and use that version's changelog as the notes.
+   Only the publishing job receives `contents: write`; validation stays read-only.
+   Confirm the workflow and published release before announcing the update.
+   A Git tag by itself does not provide the release version HACS expects.
 7. Check the repository in HACS with the intended HA version. Install it, restart,
    configure through the UI, then verify an upgrade preserves config entries,
    device IDs and entity IDs before publishing the next release.
@@ -67,6 +77,17 @@ Do not attach a custom ZIP or package the repository's test/development files.
 HACS supports this standard `custom_components/tmd_weather/` layout directly.
 Leave `zip_release` unset. GitHub's automatic source archives are sufficient;
 HACS identifies the integration content inside the chosen ref.
+
+If a publishing run fails, fix the cause and rerun it from GitHub Actions. For an
+existing tag whose release has not been published, **Run workflow** with that tag
+selected, or use `gh workflow run release.yml --ref v0.2.0`. Dispatching on a
+branch is rejected. An existing published release is left intact during retries.
+Do not overwrite a published release to distribute changes: create a new version.
+
+The release workflow needs GitHub Actions enabled and permission for its
+`GITHUB_TOKEN` publishing job to write repository contents. If repository or
+organization policy prevents that, an authorized maintainer can publish the
+validated tag manually in GitHub's **Releases** using the matching changelog notes.
 
 ## Updating users safely
 

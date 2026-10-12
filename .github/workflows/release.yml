@@ -1,15 +1,14 @@
-name: Release version validation
+name: Publish GitHub release
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to validate, for example v0.1.0'
-        required: true
-        type: string
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -24,5 +23,58 @@ jobs:
           python-version: '3.14'
       - name: Require tag, manifest, project and changelog agreement
         env:
-          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
-        run: python script/check_release.py --tag "$RELEASE_TAG"
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+        run: |
+          if [ "$RELEASE_REF_TYPE" != tag ]; then
+            echo 'Select a version tag when running this workflow manually.'
+            exit 1
+          fi
+          python script/check_release.py --tag "$RELEASE_TAG"
+
+  tests:
+    needs: version
+    uses: ./.github/workflows/tests.yml
+
+  hacs:
+    needs: version
+    uses: ./.github/workflows/hacs.yml
+
+  hassfest:
+    needs: version
+    uses: ./.github/workflows/hassfest.yml
+
+  publish:
+    needs: [version, tests, hacs, hassfest]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14'
+      - name: Generate notes for the tagged version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python script/check_release.py --tag "$RELEASE_TAG" \
+            --notes-file "$RUNNER_TEMP/tmd-release-notes.md"
+      - name: Publish the release for HACS
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          # A retry must not overwrite an already published release.
+          if gh release view "$RELEASE_TAG" --json isDraft,isPrerelease \
+            --jq '.isDraft or .isPrerelease' > "$RUNNER_TEMP/tmd-release-status"; then
+            if [ "$(cat "$RUNNER_TEMP/tmd-release-status")" != false ]; then
+              echo 'An existing draft or prerelease must be reviewed before publishing.'
+              exit 1
+            fi
+            echo "Release $RELEASE_TAG already exists."
+            exit 0
+          fi
+          gh release create "$RELEASE_TAG" --verify-tag --latest \
+            --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/tmd-release-notes.md"

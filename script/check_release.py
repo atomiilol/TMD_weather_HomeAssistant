@@ -59,12 +59,32 @@ def main() -> None:
     parser.add_argument(
         "--tag", help="Require a release tag matching v<manifest version>"
     )
+    parser.add_argument(
+        "--notes-file",
+        type=Path,
+        help="Write this version's changelog as release notes",
+    )
     args = parser.parse_args()
     try:
         version = validate(tag=args.tag)
+        if args.notes_file is not None:
+            args.notes_file.write_text(release_notes(), encoding="utf-8")
     except (ValueError, KeyError, OSError) as error:
         parser.exit(1, f"Packaging validation failed: {error}\n")
     print(f"HACS layout and version {version} validated")
+
+
+def release_notes(root: Path = ROOT) -> str:
+    """Extract only the validated version's notes, excluding previous releases."""
+    version = validate(root)
+    changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
+    for section in changelog.split("\n## ")[1:]:
+        if section.startswith(f"{version} "):
+            notes = section.partition("\n")[2].strip()
+            if not notes:
+                raise ValueError("Release notes must not be empty")
+            return f"{notes}\n"
+    raise ValueError("Changelog does not describe this version")
 
 
 if __name__ == "__main__":

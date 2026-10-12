@@ -6,7 +6,7 @@ import shutil
 from PIL import Image
 import pytest
 
-from script.check_release import ROOT, validate
+from script.check_release import ROOT, release_notes, validate
 
 
 def test_release_and_hacs_layout():
@@ -59,6 +59,24 @@ def test_missing_brand(release_copy):
     (release_copy / "custom_components/tmd_weather/brand/icon.png").unlink()
     with pytest.raises(ValueError, match="Missing packaging"):
         validate(release_copy)
+
+
+def test_release_notes():
+    """Published notes describe this version and disclose compatibility/limitations."""
+    notes = release_notes()
+    assert "First published release" in notes
+    assert "Home Assistant 2026.10.1" in notes
+    assert "NWP forecasts remain experimental" in notes
+    assert "separate current temperature" in notes
+    assert "## 0.1.0" not in notes
+    assert "UI setup, reauthentication" not in notes
+
+
+def test_empty_release_notes(release_copy):
+    """Do not publish a release with a heading but no useful notes."""
+    (release_copy / "CHANGELOG.md").write_text("# Changelog\n\n## 0.2.0 — today\n")
+    with pytest.raises(ValueError, match="must not be empty"):
+        release_notes(release_copy)
 
 
 @pytest.mark.parametrize(

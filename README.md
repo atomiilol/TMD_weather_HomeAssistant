@@ -310,7 +310,16 @@ upgrades: HA stores config entries/entity IDs separately from the downloaded fil
 
 Release compatibility is declared in `hacs.json`; a future data-schema change
 must include a config-entry migration. See [changelog](CHANGELOG.md) and
-[release procedure](docs/releases.md). No release has been published by this task.
+[release procedure](docs/releases.md).
+
+Download published versions from [GitHub Releases](https://github.com/atomiilol/TMD_weather_HomeAssistant/releases/latest).
+HACS uses the latest published release tag as the available version. Future
+`vX.Y.Z` tags automatically publish a release after version checks, tests, HACS
+validation and Hassfest pass. A commit to `main` alone does not publish an update.
+If HACS has not refreshed yet, open this repository in HACS and use **Update
+information** from its menu, then install the offered version and restart Home
+Assistant. Users tracking `main` can select a published version through
+**Redownload** to follow release updates instead.
 
 ## Development
 
@@ -323,7 +332,7 @@ uv run --frozen pytest tests/components/tmd_weather --cov --cov-report=term-miss
 uv run --frozen ruff check custom_components tests script
 uv run --frozen ruff format --check custom_components tests script
 uv run --frozen mypy custom_components/tmd_weather script/check_release.py
-uv run --frozen python script/check_release.py --tag v0.1.0
+uv run --frozen python script/check_release.py --tag v0.2.0
 ```
 
 `uv.lock` pins development dependencies, including HA 2026.10.1. Tests use real
