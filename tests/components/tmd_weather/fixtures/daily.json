@@ -1,0 +1,37 @@
+{
+  "weather_forecast": {
+    "locations": [
+      {
+        "location": {
+          "lat": 13.75,
+          "lon": 100.5
+        },
+        "forecasts": [
+          {
+            "time": "2026-10-11T00:00:00+07:00",
+            "data": {
+              "tc_max": 34.5,
+              "tc_min": 25,
+              "rh": 72.5,
+              "slp": 1008,
+              "rain": 12.5,
+              "ws10m": 6,
+              "wd10m": 180,
+              "cond": 8
+            }
+          },
+          {
+            "time": "2026-10-12T00:00:00+07:00",
+            "data": {
+              "tc_max": 33,
+              "tc_min": 24.5,
+              "rh": 80,
+              "rain": 20,
+              "cond": 7
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

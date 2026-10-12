@@ -1,0 +1,12 @@
+{
+  "domain": "tmd_weather",
+  "name": "Thai Meteorological Department (TMD)",
+  "codeowners": ["@atomiilol"],
+  "config_flow": true,
+  "documentation": "https://github.com/atomiilol/TMD_weather_HomeAssistant",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/atomiilol/TMD_weather_HomeAssistant/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

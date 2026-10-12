@@ -1,0 +1,29 @@
+"""Constants shared by the TMD client and integration."""
+
+from datetime import timedelta
+from typing import Final
+
+DOMAIN: Final = "tmd_weather"
+NAME: Final = "Thai Meteorological Department (TMD)"
+MANUFACTURER: Final = "Thai Meteorological Department"
+ATTRIBUTION: Final = "Data provided by the Thai Meteorological Department (TMD)"
+CONF_ACCESS_TOKEN: Final = "access_token"
+CURRENT_SOURCE: Final = "nwp_model"
+CONF_OBSERVATION_UID: Final = "observation_uid"
+CONF_OBSERVATION_KEY: Final = "observation_key"
+OBSERVATION_SOURCE: Final = "station"
+OBSERVATION_URL: Final = "https://data.tmd.go.th/api/Weather3Hours/V2/"
+OBSERVATION_UPDATE_INTERVAL: Final = timedelta(minutes=30)
+OBSERVATION_MAX_AGE: Final = timedelta(hours=6)
+OBSERVATION_MAX_DISTANCE_KM: Final = 100
+NWP_BASE_URL: Final = "https://data.tmd.go.th/nwpapi/v1"
+HOURLY_ENDPOINT: Final = "/forecast/location/hourly/at"
+DAILY_ENDPOINT: Final = "/forecast/location/daily/at"
+HOURLY_FIELDS: Final = "tc,rh,slp,rain,ws10m,wd10m,cond"
+DAILY_FIELDS: Final = "tc_max,tc_min,rh,slp,rain,ws10m,wd10m,cond"
+HOURLY_DURATION: Final = 48
+DAILY_DURATION: Final = 7
+REQUEST_TIMEOUT: Final = 10
+MAX_RESPONSE_BYTES: Final = 2 * 1024 * 1024
+HOURLY_UPDATE_INTERVAL: Final = timedelta(hours=1)
+DAILY_UPDATE_INTERVAL: Final = timedelta(hours=3)

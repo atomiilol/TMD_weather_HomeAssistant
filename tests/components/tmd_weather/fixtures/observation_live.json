@@ -1,0 +1,75 @@
+{
+  "Stations": {
+    "Station": [
+      {
+        "WmoStationNumber": "48455",
+        "StationNameThai": "กรุงเทพมหานคร",
+        "StationNameEnglish": "BANGKOK METROPOLIS",
+        "Province": "กรุงเทพมหานคร",
+        "Latitude": "13.72639",
+        "Longitude": "100.56000",
+        "Observation": {
+          "DateTime": "10/12/2026 07:00:00",
+          "StationPressure": "1012.97",
+          "MeanSeaLevelPressure": "1013.46",
+          "MinimumTemperature": "27.5",
+          "AirTemperature": "28.2",
+          "DewPoint": "25.8",
+          "RelativeHumidity": "87",
+          "VaporPressure": "33.20",
+          "LandVisibility": "10.00",
+          "WindDirection": "000",
+          "WindSpeed": "0.0",
+          "Rainfall": "0.00",
+          "Rainfall24Hr": "0.00"
+        }
+      },
+      {
+        "WmoStationNumber": "48454",
+        "StationNameThai": "กรุงเทพฯ ท่าเรือคลองเตย",
+        "StationNameEnglish": "BANGKOK PORT (KLONG TOEI)",
+        "Province": "กรุงเทพมหานคร",
+        "Latitude": "13.70694",
+        "Longitude": "100.56805",
+        "Observation": {
+          "DateTime": "10/12/2026 07:00:00",
+          "StationPressure": "1011.21",
+          "MeanSeaLevelPressure": "1011.90",
+          "MinimumTemperature": "27.3",
+          "AirTemperature": "28.0",
+          "DewPoint": "25.9",
+          "RelativeHumidity": "88",
+          "VaporPressure": "33.37",
+          "LandVisibility": "10.00",
+          "WindDirection": "000",
+          "WindSpeed": "0.0",
+          "Rainfall": "0.00",
+          "Rainfall24Hr": "0.00"
+        }
+      },
+      {
+        "WmoStationNumber": "48453",
+        "StationNameThai": "กรุงเทพฯ บางนา สกษ.",
+        "StationNameEnglish": "BANG NA AGROMET.",
+        "Province": "กรุงเทพมหานคร",
+        "Latitude": "13.66639",
+        "Longitude": "100.60611",
+        "Observation": {
+          "DateTime": "10/12/2026 07:00:00",
+          "StationPressure": "1011.72",
+          "MeanSeaLevelPressure": "1012.03",
+          "MinimumTemperature": "27.0",
+          "AirTemperature": "27.6",
+          "DewPoint": "25.2",
+          "RelativeHumidity": "87",
+          "VaporPressure": "32.00",
+          "LandVisibility": "10.00",
+          "WindDirection": "300",
+          "WindSpeed": "3.7",
+          "Rainfall": "0.00",
+          "Rainfall24Hr": "0.00"
+        }
+      }
+    ]
+  }
+}

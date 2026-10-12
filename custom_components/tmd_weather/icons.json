@@ -1,0 +1,12 @@
+{
+  "entity": {
+    "sensor": {
+      "model_hour_rain": {
+        "default": "mdi:weather-rainy"
+      },
+      "station_rainfall": {
+        "default": "mdi:weather-rainy"
+      }
+    }
+  }
+}
