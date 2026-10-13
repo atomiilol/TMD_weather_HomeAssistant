@@ -1,6 +1,6 @@
 # Thai Meteorological Department (TMD) for Home Assistant
 
-<img src="custom_components/tmd_weather/brand/logo.png" alt="TMD emblem" width="128">
+<img src="docs/tmd-banner.png" alt="TMD emblem" width="690">
 
 A UI-configured custom integration using official Thai Meteorological Department
 (กรมอุตุนิยมวิทยา) NWP coordinate APIs. Domain: `tmd_weather`.
