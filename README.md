@@ -75,12 +75,6 @@ do not collect cumulative or measurement statistics; current measurement sensors
 use Home Assistant's measurement statistics, including circular wind-direction
 statistics. Home Assistant handles supported display-unit conversions.
 
-Upgrading to 0.3.0 automatically removes old dew point/visibility placeholders
-from modeled locations. Your location configuration, weather entity, forecasts
-and supported sensor IDs are preserved. The weather entity can still show an
-unknown sky condition when TMD supplies no condition code. Disable any unwanted
-supported sensors using Home Assistant's entity controls.
-
 ## Configure the fetch interval
 
 1. Open **Settings → Devices & services → Thai Meteorological Department (TMD)**.
