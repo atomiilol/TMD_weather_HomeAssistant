@@ -7,10 +7,12 @@ A UI-configured custom integration using official Thai Meteorological Department
 
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=atomiilol&repository=TMD_weather_HomeAssistant&category=integration)
 
-**AWS stations beta — 0.5.0b2:** this branch adds physical AWS current observations,
+**AWS stations beta — 0.5.0b3:** this branch adds physical AWS current observations,
 automatic nearest-station selection and manual region/name selection from the
 supplied local catalog. Existing installations keep their current source until
 reconfigured. Hourly/daily forecasts keep their existing provider and coordinates.
+Station coordinates now let automatic selection rank candidates locally and check
+only the nearest stations until it finds usable recent observations.
 See [beta installation, behavior and test instructions](docs/aws-beta.md).
 
 ## Note
@@ -410,7 +412,7 @@ uv run --frozen pytest tests/components/tmd_weather --cov --cov-report=term-miss
 uv run --frozen ruff check custom_components tests script
 uv run --frozen ruff format --check custom_components tests script
 uv run --frozen mypy custom_components/tmd_weather script/check_release.py
-uv run --frozen python script/check_release.py --tag v0.5.0b2
+uv run --frozen python script/check_release.py --tag v0.5.0b3
 ```
 
 `uv.lock` pins development dependencies, including HA 2026.10.1. Tests use real

@@ -18,12 +18,11 @@ from custom_components.tmd_weather.aws import (
     parse_aws_response,
 )
 from custom_components.tmd_weather.sensor import TMDAWSStatusSensor
-from custom_components.tmd_weather.stations import async_load_stations
 from custom_components.tmd_weather.weather import TMDWeatherEntity
 
 
 async def test_confirmation_can_choose_nearby_alternative(
-    hass, mock_client, mock_aws_client, config_entry
+    hass, mock_client, mock_aws_client, config_entry, nearby_aws_catalog
 ):
     """The confirmation dropdown validates and saves a different nearby station."""
     from dataclasses import replace
@@ -54,6 +53,10 @@ async def test_confirmation_can_choose_nearby_alternative(
     if result["type"] == FlowResultType.SHOW_PROGRESS_DONE:
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
     assert result["data_schema"]({})["aws_station_id"] == "2"
+    # Station 3 has never been requested; its coordinates still populate the UI.
+    assert 3 not in [call.args[0] for call in mock_aws_client.await_args_list]
+    selector = next(iter(result["data_schema"].schema.values()))
+    assert any(choice["value"] == "3" for choice in selector.config["options"])
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {"aws_station_id": "3"}
     )
@@ -175,8 +178,10 @@ async def test_no_stale_or_guessed_modeled_condition(hass, aws_setup, freezer):
     assert entity.condition is None
 
 
-async def test_discovery_persists_geometry_and_reports_progress(hass, aws_payload):
-    records = (await async_load_stations(hass))[:3]
+async def test_discovery_persists_health_and_reports_progress(
+    nearby_aws_catalog, aws_payload
+):
+    records = nearby_aws_catalog
     client = TMDAWSClient(AsyncMock(spec=ClientSession), records)
     stored = {}
     store = AsyncMock()
@@ -203,8 +208,9 @@ async def test_discovery_persists_geometry_and_reports_progress(hass, aws_payloa
             == 1
         )
         assert progress[0] == (0, 3)
-        assert progress[-1] == (3, 3)
-        assert len(stored["stations"]) == 3
+        assert progress[-1] == (1, 3)
+        request.assert_awaited_once_with(1)
+        assert len(stored["stations"]) == 1
         assert "access_token" not in json.dumps(stored)
         assert "items" not in json.dumps(stored)
         store.async_load.return_value = stored
@@ -212,11 +218,11 @@ async def test_discovery_persists_geometry_and_reports_progress(hass, aws_payloa
         restored = TMDAWSDiscovery(client, store)
         assert await restored.async_nearest(13.75, 100.5) == 1
         request.assert_awaited_once_with(1)
-        assert len(restored.cache) == 3
+        assert len(restored.cache) == 1
 
 
-async def test_cache_expiry_and_invalid_data(hass, aws_payload):
-    records = (await async_load_stations(hass))[:1]
+async def test_cache_expiry_and_invalid_data(nearby_aws_catalog, aws_payload):
+    records = nearby_aws_catalog[:1]
     client = TMDAWSClient(AsyncMock(spec=ClientSession), records)
     store = AsyncMock()
     store.async_load.return_value = {
@@ -239,8 +245,10 @@ async def test_cache_expiry_and_invalid_data(hass, aws_payload):
         request.assert_awaited_once_with(1)
 
 
-async def test_optional_cache_errors_do_not_block_selection(hass, aws_payload):
-    records = (await async_load_stations(hass))[:1]
+async def test_optional_cache_errors_do_not_block_selection(
+    nearby_aws_catalog, aws_payload
+):
+    records = nearby_aws_catalog[:1]
     client = TMDAWSClient(AsyncMock(spec=ClientSession), records)
     store = AsyncMock()
     store.async_load.side_effect = OSError
@@ -256,10 +264,10 @@ async def test_optional_cache_errors_do_not_block_selection(hass, aws_payload):
 
 
 async def test_unusable_station_cache_expires_and_recovers(
-    hass, aws_payload, monkeypatch
+    nearby_aws_catalog, aws_payload, monkeypatch
 ):
     """Recheck unusable candidates after expiry and recover on fresh live evidence."""
-    records = (await async_load_stations(hass))[:2]
+    records = nearby_aws_catalog[:2]
     client = TMDAWSClient(AsyncMock(spec=ClientSession), records)
     current = [100.0]
     monkeypatch.setattr(

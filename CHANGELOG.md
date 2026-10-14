@@ -3,6 +3,24 @@
 Versions follow semantic versioning. A version becomes available through HACS
 after the corresponding GitHub Release is published; a tag alone is insufficient.
 
+## 0.5.0b3 — 2026-10-14
+
+**AWS stations beta. Requires Home Assistant 2026.10.1 or later.**
+
+- Package the user's updated 227-station JSON unchanged, including each station's
+  latitude and longitude. Preserve all station IDs, names, types and regions.
+- Replace the full-catalog API scan with local great-circle distance ranking.
+  Check candidates within 100 km one at a time, nearest first, and stop at the
+  first online station with usable observations no older than three hours.
+  A healthy nearest candidate needs only one request, including on first setup.
+- Keep stations across region/province borders eligible. No external geocoding
+  service or province dataset is needed.
+- Populate confirmation alternatives and distances from the local catalog,
+  including stations not yet requested. Show progress for nearby candidates.
+- Preserve live response identity/location checks, short unusable-station caching,
+  existing selected stations, configuration and entity IDs. Normal polling still
+  requests only the saved station every ten minutes; forecasts are unchanged.
+
 ## 0.5.0b2 — 2026-10-14
 
 **AWS stations beta. Requires Home Assistant 2026.10.1 or later.**

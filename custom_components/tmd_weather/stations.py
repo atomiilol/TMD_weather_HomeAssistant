@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 import json
 import logging
+import math
 from pathlib import Path
 
 from homeassistant.core import HomeAssistant
@@ -25,6 +26,8 @@ class TMDAWSStationRecord:
     name: str
     station_type: str
     region: str
+    latitude: float
+    longitude: float
 
 
 def parse_station_database(payload: object) -> tuple[TMDAWSStationRecord, ...]:
@@ -59,9 +62,28 @@ def parse_station_database(payload: object) -> tuple[TMDAWSStationRecord, ...]:
         if aws_id in seen:
             raise TMDStationDatabaseError(f"Duplicate AWS station ID {aws_id}")
         seen.add(aws_id)
+        coordinates = []
+        for key, limit in (("lat", 90), ("long", 180)):
+            coordinate = item.get(key)
+            if (
+                isinstance(coordinate, bool)
+                or not isinstance(coordinate, (int, float))
+                or not math.isfinite(coordinate)
+                or not -limit <= coordinate <= limit
+            ):
+                raise TMDStationDatabaseError(
+                    f"Station record {index} has an invalid {key}"
+                )
+            coordinates.append(float(coordinate))
         result.append(
             TMDAWSStationRecord(
-                item["number"], aws_id, item["name"], item["type"], item["region"]
+                item["number"],
+                aws_id,
+                item["name"],
+                item["type"],
+                item["region"],
+                coordinates[0],
+                coordinates[1],
             )
         )
     return tuple(result)

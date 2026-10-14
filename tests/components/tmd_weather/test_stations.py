@@ -25,7 +25,7 @@ async def test_supplied_catalog(hass):
     assert len({station.aws_id for station in stations}) == 227
     assert (
         hashlib.sha256(CATALOG_PATH.read_bytes()).hexdigest()
-        == "9144e1d04f8f99e8cb02d6a3914300b31cef95f67e120d6aaa93fc6ec5b3ade1"
+        == "cd8ed37a0ba5c138dab7abc2dd5978572a70ed7602b47c43b18eee15abd61913"
     )
     for aws_id, number, name in (
         (1, "0001", "Chiang Mai Airport Weather Observing Station"),
@@ -37,6 +37,8 @@ async def test_supplied_catalog(hass):
         assert record.number == number
         assert record.name == name
     assert get_all_stations() is stations
+    assert stations[0].latitude == pytest.approx(18.77111053466797)
+    assert stations[0].longitude == pytest.approx(98.96916961669922)
     assert get_station_by_id(99999) is None
     assert get_station_by_id(True) is None
     assert len(get_regions()) == 6
@@ -64,6 +66,18 @@ def test_invalid_catalog_shape(payload):
         ("value", float("inf")),
         ("value", "abc"),
         ("value", "\u0661"),
+        ("lat", None),
+        ("lat", True),
+        ("lat", "18.75"),
+        ("lat", 90.1),
+        ("lat", -90.1),
+        ("lat", float("nan")),
+        ("long", None),
+        ("long", False),
+        ("long", "100.5"),
+        ("long", 180.1),
+        ("long", -180.1),
+        ("long", float("inf")),
     ],
 )
 def test_invalid_record(key, value):
@@ -77,6 +91,14 @@ def test_duplicate_id():
     record = json.loads(CATALOG_PATH.read_text())[0]
     with pytest.raises(TMDStationDatabaseError, match="Duplicate"):
         parse_station_database([record, deepcopy(record)])
+
+
+@pytest.mark.parametrize("key", ["lat", "long"])
+def test_missing_coordinate(key):
+    record = json.loads(CATALOG_PATH.read_text())[0]
+    del record[key]
+    with pytest.raises(TMDStationDatabaseError):
+        parse_station_database([record])
 
 
 def test_integer_compatible_id():

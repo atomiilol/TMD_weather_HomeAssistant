@@ -11,7 +11,7 @@ from script.check_release import ROOT, main, release_notes, validate
 
 def test_release_and_hacs_layout():
     """The proposed release has one integration and uses standard HACS refs."""
-    assert validate(tag="v0.5.0b2") == "0.5.0b2"
+    assert validate(tag="v0.5.0b3") == "0.5.0b3"
     hacs = json.loads((ROOT / "hacs.json").read_text())
     assert hacs["name"] == "Thai Meteorological Department (TMD)"
     assert hacs["country"] == "TH"
@@ -43,7 +43,7 @@ def test_project_version_mismatch(release_copy):
     """Do not distribute divergent project and integration versions."""
     path = release_copy / "pyproject.toml"
     path.write_text(
-        path.read_text().replace('version = "0.5.0b2"', 'version = "0.5.0"')
+        path.read_text().replace('version = "0.5.0b3"', 'version = "0.5.0"')
     )
     with pytest.raises(ValueError, match="versions differ"):
         validate(release_copy)
@@ -75,10 +75,10 @@ def test_prerelease_workflow_metadata(tmp_path, monkeypatch):
     output = tmp_path / "github-output"
     monkeypatch.setattr(
         "sys.argv",
-        ["check_release.py", "--tag", "v0.5.0b2", "--github-output", str(output)],
+        ["check_release.py", "--tag", "v0.5.0b3", "--github-output", str(output)],
     )
     main()
-    assert output.read_text() == "version=0.5.0b2\nprerelease=true\n"
+    assert output.read_text() == "version=0.5.0b3\nprerelease=true\n"
 
 
 def test_stable_versions_still_valid(release_copy):
@@ -89,7 +89,7 @@ def test_stable_versions_still_valid(release_copy):
         "CHANGELOG.md",
     ):
         path = release_copy / name
-        path.write_text(path.read_text().replace("0.5.0b2", "0.5.0"))
+        path.write_text(path.read_text().replace("0.5.0b3", "0.5.0"))
     assert validate(release_copy, tag="v0.5.0") == "0.5.0"
 
 

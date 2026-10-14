@@ -69,7 +69,9 @@ async def test_manual_setup(hass, mock_client, mock_aws_client, config_entry):
     assert result["result"].runtime_data.aws_coordinator.aws_id == 2
 
 
-async def test_automatic_setup(hass, mock_client, mock_aws_client, config_entry):
+async def test_automatic_setup(
+    hass, mock_client, mock_aws_client, config_entry, nearby_aws_catalog
+):
     hass.config.latitude = 13.75
     hass.config.longitude = 100.5
     result = await begin_aws(hass, mock_client, config_entry)
@@ -315,7 +317,7 @@ async def test_switch_back_to_existing_source(hass, aws_setup, mock_aws_client):
 
 
 async def test_reconfigure_automatic_prefills_current_ha_location(
-    hass, aws_setup, mock_aws_client
+    hass, nearby_aws_catalog, aws_setup, mock_aws_client
 ):
     """HA location changes affect a new automatic search, never forecast coordinates."""
     before = (aws_setup.data["latitude"], aws_setup.data["longitude"])
