@@ -37,3 +37,10 @@ to make the fixture valid JSON. Coordinates, values and offset-free times are
 unchanged. The endpoint-specific adapter interprets that clock in Asia/Bangkok;
 coordinate responses continue to reject naive timestamps. This is documentation
 data, not an authenticated production capture.
+# AWS live response
+
+`aws_live.json` was captured from the public catalog station 2 endpoint on
+2026-10-14. It contains only allowlisted station metadata and observation rows;
+embedded forecasts, windrose data, replication metadata and top-level token
+metadata are excluded. The parser test uses the capture's UTC hour instead of
+the test suite's synthetic frozen date. No API credential is included.

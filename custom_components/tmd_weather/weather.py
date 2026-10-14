@@ -31,7 +31,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .api import BANGKOK, ForecastPoint, WeatherValues
+from .api import BANGKOK, ForecastPoint, WeatherValues, current_point
 from .const import ATTRIBUTION
 from .coordinator import (
     TMDAWSObservationDataUpdateCoordinator,
@@ -97,7 +97,6 @@ class TMDWeatherEntity(
     """Configured station or modeled current weather with independent forecasts."""
 
     _attr_has_entity_name = True
-    _attr_name = None
     _attr_attribution = ATTRIBUTION
     _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_native_pressure_unit = UnitOfPressure.HPA
@@ -124,6 +123,18 @@ class TMDWeatherEntity(
         self._daily = runtime.daily_coordinator
         self._attr_unique_id = entry.unique_id
         self._attr_device_info = device_info(entry)
+        if runtime.aws_coordinator is not None:
+            self._attr_translation_key = "aws_weather"
+        else:
+            self._attr_name = None
+
+    async def async_added_to_hass(self) -> None:
+        """Keep modeled condition labels updated even without forecast subscribers."""
+        await super().async_added_to_hass()
+        if self._runtime.aws_coordinator is not None:
+            self.async_on_remove(
+                self._hourly.async_add_listener(self._handle_coordinator_update)
+            )
 
     @property
     def extra_state_attributes(self) -> dict[str, str | int] | None:
@@ -134,6 +145,8 @@ class TMDWeatherEntity(
                 "aws_station_id": aws.aws_id,
                 "station_name": aws.record.name,
                 "pressure_type": "station",
+                "condition_source": "nwp_model",
+                "measurement_source": "aws_station",
             }
         return None
 
@@ -159,6 +172,14 @@ class TMDWeatherEntity(
     @property
     def condition(self) -> str | None:
         """Translate sky/precipitation codes without guessing temperature codes."""
+        if self._runtime.aws_coordinator is not None:
+            if (
+                self._hourly.last_update_success
+                and self._hourly.data
+                and (point := current_point(self._hourly.data, dt_util.utcnow()))
+            ):
+                return CONDITION_MAP.get(point.values.condition_code or 0)
+            return None
         return CONDITION_MAP.get(self._current.condition_code or 0)
 
     @property
@@ -173,7 +194,7 @@ class TMDWeatherEntity(
 
     @property
     def native_pressure(self) -> float | None:
-        """Return current sea-level pressure in hPa."""
+        """Return the configured source's pressure in hPa."""
         return self._current.pressure
 
     @property

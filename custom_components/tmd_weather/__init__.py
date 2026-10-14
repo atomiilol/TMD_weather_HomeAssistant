@@ -32,7 +32,7 @@ from .coordinator import (
 from .observations import TMDObservationClient
 from .stations import TMDStationDatabaseError, get_station_by_id
 
-PLATFORMS = [Platform.WEATHER, Platform.SENSOR]
+PLATFORMS = [Platform.WEATHER, Platform.SENSOR, Platform.SELECT]
 _LOGGER = logging.getLogger(__name__)
 
 

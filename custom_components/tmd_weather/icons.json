@@ -18,6 +18,17 @@
       },
       "forecast_rainfall": {
         "default": "mdi:weather-rainy"
+      },
+      "selected_aws_station": {
+        "default": "mdi:map-marker"
+      },
+      "aws_station_status": {
+        "default": "mdi:access-point"
+      }
+    },
+    "select": {
+      "aws_station": {
+        "default": "mdi:map-marker"
       }
     }
   }

@@ -17,6 +17,7 @@ import probatio
 from .api import TMDAPIError, TMDInvalidLocationError
 from .aws import async_aws_discovery
 from .const import (
+    AWS_MAX_DISTANCE_KM,
     AWS_SOURCE,
     CONF_AWS_LATITUDE,
     CONF_AWS_LONGITUDE,
@@ -25,6 +26,7 @@ from .const import (
     CONF_AWS_USE_HA_LOCATION,
     CONF_CURRENT_SOURCE,
 )
+from .observations import distance_km
 from .stations import (
     TMDStationDatabaseError,
     get_regions,
@@ -43,6 +45,8 @@ class AWSStationSelectionFlow(ConfigFlow):
         self._aws_region = ""
         self._aws_task: asyncio.Task[int] | None = None
         self._aws_error: str | None = None
+        self._aws_checked = 0
+        self._aws_total = 0
 
     async def async_step_aws_selection(
         self, user_input: dict[str, Any] | None = None
@@ -211,16 +215,32 @@ class AWSStationSelectionFlow(ConfigFlow):
             return self.async_show_progress_done(next_step_id="aws_confirm")
         if self._aws_task is None:
             service = await async_aws_discovery(self.hass)
+            self._aws_checked = 0
+            self._aws_total = len(service.client.catalog)
+
+            def discovery_progress(checked: int, total: int) -> None:
+                self._aws_checked, self._aws_total = checked, total
+                if self._aws_task is not None and self._aws_task.cancelling():
+                    return
+                if checked % 8 == 0 or checked == total:
+                    self.async_update_progress(checked / total if total else 0)
+                    self.async_notify_flow_changed()
+
             self._aws_task = self.hass.async_create_task(
                 service.async_nearest(
                     self._aws_pending[CONF_AWS_LATITUDE],
                     self._aws_pending[CONF_AWS_LONGITUDE],
+                    discovery_progress,
                 )
             )
         return self.async_show_progress(
             step_id="aws_discover",
             progress_action="aws_discovering",
             progress_task=self._aws_task,
+            description_placeholders={
+                "checked": str(self._aws_checked),
+                "total": str(self._aws_total),
+            },
         )
 
     async def async_step_aws_confirm(
@@ -233,13 +253,62 @@ class AWSStationSelectionFlow(ConfigFlow):
             result = await self.async_step_aws_selection()
             result["errors"] = {"base": error}
             return result
-        if user_input is not None:
-            return self._finish_aws()
         record = get_station_by_id(self._aws_pending[CONF_AWS_STATION_ID])
         assert record is not None
+        service = await async_aws_discovery(self.hass)
+        choices = {record.aws_id: f"{record.number} — {record.name}"}
+        for station in service.client.catalog:
+            if not (cached := service.cache.get(station.aws_id)):
+                continue
+            status = cached[1]
+            if status.latitude is None or status.longitude is None:
+                continue
+            distance = distance_km(
+                self._aws_pending[CONF_AWS_LATITUDE],
+                self._aws_pending[CONF_AWS_LONGITUDE],
+                status.latitude,
+                status.longitude,
+            )
+            if distance <= AWS_MAX_DISTANCE_KM:
+                choices[station.aws_id] = (
+                    f"{station.number} — {station.name} ({distance:.1f} km)"
+                )
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                selected = int(user_input.get(CONF_AWS_STATION_ID, record.aws_id))
+                if selected not in choices:
+                    raise ValueError
+                if selected != record.aws_id:
+                    await service.client.async_get_station(selected)
+                    self._aws_pending[CONF_AWS_STATION_ID] = selected
+                    self._aws_pending[CONF_AWS_SELECTION_MODE] = "manual"
+            except TypeError, ValueError:
+                errors["base"] = "invalid_aws_selection"
+            except (TMDAPIError, TimeoutError) as error:
+                from .config_flow import api_error_key
+
+                errors["base"] = api_error_key(error)
+            else:
+                return self._finish_aws()
         return self.async_show_form(
             step_id="aws_confirm",
-            data_schema=probatio.Schema({}),
+            errors=errors,
+            data_schema=probatio.Schema(
+                {
+                    probatio.Required(
+                        CONF_AWS_STATION_ID, default=str(record.aws_id)
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(value=str(aws_id), label=label)
+                                for aws_id, label in choices.items()
+                            ],
+                            mode=SelectSelectorMode.DROPDOWN,
+                        )
+                    ),
+                }
+            ),
             description_placeholders={
                 "station_name": record.name,
                 "station_number": record.number,

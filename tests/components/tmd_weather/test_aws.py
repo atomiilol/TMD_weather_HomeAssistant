@@ -181,9 +181,8 @@ async def test_discovery_cache_and_concurrency(hass, aws_payload):
         calls.clear()
         assert await discovery.async_nearest(13.75, 100.5) == 2
         assert calls == [
-            1,
-            2,
-        ]  # Cached geometry, fresh health checks; no complete rescan.
+            2
+        ]  # Skip a recently verified offline station; recheck the choice.
         assert peak <= 4
         with pytest.raises(TMDInvalidLocationError):
             await discovery.async_nearest(0, 0)
