@@ -1,14 +1,18 @@
 """Public AWS station observations; independent of authenticated NWP sessions."""
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+import logging
 from time import monotonic
 
 from aiohttp import ClientSession, DummyCookieJar
 from homeassistant.const import EVENT_HOMEASSISTANT_CLOSE, UnitOfLength, UnitOfSpeed
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.helpers.storage import Store
 from homeassistant.util.unit_conversion import DistanceConverter, SpeedConverter
 
 from .api import (
@@ -28,10 +32,13 @@ from .const import (
     AWS_MAX_DISTANCE_KM,
     AWS_METADATA_TTL,
     AWS_STALE_AFTER,
+    AWS_UNUSABLE_CACHE_TTL,
     DOMAIN,
 )
 from .observations import _numeric, distance_km
 from .stations import TMDAWSStationRecord, async_load_stations
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -197,6 +204,9 @@ class TMDAWSClient:
     session: ClientSession = field(repr=False)
     catalog: tuple[TMDAWSStationRecord, ...]
     _retry_at: float = field(default=0, init=False)
+    on_response: Callable[[int, TMDAWSResponse], None] | None = field(
+        default=None, init=False, repr=False
+    )
 
     async def async_get_station(self, aws_id: int) -> TMDAWSResponse:
         """Use only normalized IDs present in the supplied local catalog."""
@@ -220,18 +230,128 @@ class TMDAWSClient:
         except TMDRateLimitError as error:
             self._retry_at = monotonic() + error.retry_after
             raise
-        return parse_aws_response(payload, aws_id, datetime.now(UTC))
+        response = parse_aws_response(payload, aws_id, datetime.now(UTC))
+        if self.on_response is not None:
+            self.on_response(aws_id, response)
+        return response
 
 
 class TMDAWSDiscovery:
     """Cache coordinates for setup; normal polling never invokes discovery."""
 
-    def __init__(self, client: TMDAWSClient) -> None:
+    def __init__(
+        self, client: TMDAWSClient, store: Store[dict[str, object]] | None = None
+    ) -> None:
         self.client = client
         self.cache: dict[int, tuple[float, TMDAWSStationStatus]] = {}
         self.lock = asyncio.Lock()
+        self.store = store
+        self._loaded = False
+        self._unusable_until: dict[int, float] = {}
+        self.client.on_response = self.note_response
 
-    async def async_nearest(self, latitude: float, longitude: float) -> int:
+    def note_response(self, aws_id: int, response: TMDAWSResponse) -> None:
+        """Refresh metadata after normal polling or manual station selection."""
+        self.cache[aws_id] = (monotonic(), response.status)
+        self._record_health(aws_id, response)
+
+    def _record_health(self, aws_id: int, response: TMDAWSResponse) -> None:
+        """Avoid immediately rechecking stations already found offline or empty."""
+        if response.available(datetime.now(UTC)):
+            self._unusable_until.pop(aws_id, None)
+        else:
+            self._unusable_until[aws_id] = monotonic() + AWS_UNUSABLE_CACHE_TTL
+
+    async def _async_load_cache(self) -> None:
+        """Restore catalog metadata with its original six-hour expiry."""
+        if self._loaded or self.store is None:
+            return
+        self._loaded = True
+        try:
+            data = await self.store.async_load()
+        except HomeAssistantError, OSError, ValueError:
+            _LOGGER.warning(
+                "Unable to restore AWS metadata cache; rediscovering coordinates"
+            )
+            return
+        if not isinstance(data, dict) or not isinstance(
+            rows := data.get("stations"), list
+        ):
+            return
+        ids = {station.aws_id for station in self.client.catalog}
+        now = datetime.now(UTC).timestamp()
+        for row in rows[: len(ids)]:
+            if not isinstance(row, dict) or not isinstance(
+                site := row.get("site"), dict
+            ):
+                continue
+            aws_id = site.get("AWSID")
+            if (
+                isinstance(aws_id, bool)
+                or not isinstance(aws_id, int)
+                or aws_id not in ids
+            ):
+                continue
+            expiry = _numeric(row.get("expires_at"))
+            if expiry is None or not 0 < expiry - now <= AWS_METADATA_TTL:
+                continue
+            try:
+                status = parse_aws_response(
+                    {"result": 1, "data": {"site": site, "items": []}},
+                    aws_id,
+                    datetime.now(UTC),
+                ).status
+            except TMDInvalidResponseError:
+                continue
+            restored_at = monotonic() - AWS_METADATA_TTL + expiry - now
+            if (existing := self.cache.get(aws_id)) and existing[0] > restored_at:
+                continue
+            self.cache[aws_id] = (restored_at, status)
+            unusable = _numeric(row.get("unusable_until"))
+            if unusable is not None and 0 < unusable - now <= AWS_UNUSABLE_CACHE_TTL:
+                self._unusable_until[aws_id] = monotonic() + unusable - now
+
+    async def _async_save_cache(self) -> None:
+        """Persist public station metadata without user locations or raw responses."""
+        if self.store is None:
+            return
+        rows = []
+        now = datetime.now(UTC).timestamp()
+        for aws_id, (cached_at, status) in self.cache.items():
+            remaining = AWS_METADATA_TTL - (monotonic() - cached_at)
+            if remaining <= 0:
+                continue
+            rows.append(
+                {
+                    "expires_at": now + remaining,
+                    "unusable_until": now
+                    + max(0, self._unusable_until.get(aws_id, 0) - monotonic()),
+                    "site": {
+                        "AWSID": aws_id,
+                        "SNAME": status.api_name_en,
+                        "FNAME": status.api_name_th,
+                        "LAT": status.latitude,
+                        "LON": status.longitude,
+                        "ALT": status.altitude,
+                        "ONLINE": "y" if status.online else "n",
+                        "CNCT_YN": "y" if status.connected else "n",
+                        "WV_SENSOR": "y" if status.has_visibility_sensor else "n",
+                    },
+                }
+            )
+        try:
+            await self.store.async_save({"stations": rows})
+        except HomeAssistantError, OSError, ValueError:
+            _LOGGER.warning(
+                "Unable to persist AWS station metadata cache; keeping it in memory"
+            )
+
+    async def async_nearest(
+        self,
+        latitude: float,
+        longitude: float,
+        progress: Callable[[int, int], None] | None = None,
+    ) -> int:
         """Bound discovery concurrency, reuse metadata and recheck candidate health."""
         if (
             _numeric(latitude, minimum=-90, maximum=90) is None
@@ -239,23 +359,39 @@ class TMDAWSDiscovery:
         ):
             raise TMDInvalidLocationError("Invalid AWS selection coordinates")
         async with self.lock, asyncio.timeout(AWS_DISCOVERY_TIMEOUT):
+            await self._async_load_cache()
             fresh: dict[int, TMDAWSResponse] = {}
             semaphore = asyncio.Semaphore(AWS_DISCOVERY_CONCURRENCY)
+            checked = 0
+            total = len(self.client.catalog)
+            if progress:
+                progress(checked, total)
+
+            def checked_station() -> None:
+                nonlocal checked
+                checked += 1
+                if progress:
+                    progress(checked, total)
 
             async def discover(record: TMDAWSStationRecord) -> None:
                 if (cached := self.cache.get(record.aws_id)) and monotonic() - cached[
                     0
                 ] < AWS_METADATA_TTL:
+                    checked_station()
                     return
                 async with semaphore:
                     try:
                         response = await self.client.async_get_station(record.aws_id)
                     except TMDAPIError:
                         return
+                    finally:
+                        checked_station()
                     self.cache[record.aws_id] = (monotonic(), response.status)
                     fresh[record.aws_id] = response
+                    self._record_health(record.aws_id, response)
 
             await asyncio.gather(*(discover(record) for record in self.client.catalog))
+            await self._async_save_cache()
             candidates = []
             for record in self.client.catalog:
                 if not (cached := self.cache.get(record.aws_id)):
@@ -269,6 +405,8 @@ class TMDAWSDiscovery:
                 if distance <= AWS_MAX_DISTANCE_KM:
                     candidates.append((distance, record.aws_id))
             for _, aws_id in sorted(candidates):
+                if monotonic() < self._unusable_until.get(aws_id, 0):
+                    continue
                 try:
                     response = fresh.get(aws_id) or await self.client.async_get_station(
                         aws_id
@@ -276,6 +414,7 @@ class TMDAWSDiscovery:
                 except TMDAPIError:
                     continue
                 self.cache[aws_id] = (monotonic(), response.status)
+                self._record_health(aws_id, response)
                 # Recheck coordinates too: a station's metadata can change.
                 status = response.status
                 if (
@@ -310,6 +449,8 @@ async def async_aws_discovery(hass: HomeAssistant) -> TMDAWSDiscovery:
         session.detach()
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_CLOSE, close_session)
-    service = TMDAWSDiscovery(TMDAWSClient(session, catalog))
+    service = TMDAWSDiscovery(
+        TMDAWSClient(session, catalog), Store(hass, 1, f"{DOMAIN}.aws_station_metadata")
+    )
     hass.data[key] = service
     return service

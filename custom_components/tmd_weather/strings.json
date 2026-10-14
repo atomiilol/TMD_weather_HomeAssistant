@@ -75,11 +75,17 @@
       },
       "aws_discover": {
         "title": "Finding a nearby AWS station",
-        "description": "Checking the supplied station catalog with at most four concurrent requests. You can cancel discovery and choose a station manually."
+        "description": "Checking {checked} of {total} catalog stations. The first search needs to retrieve their coordinates; later searches reuse the cache. Cancel and choose manually to skip the scan."
       },
       "aws_confirm": {
         "title": "Confirm selected station",
-        "description": "Selected {station_number} — {station_name} ({station_region}). Save to use this station for current measurements. Your forecast location stays unchanged."
+        "description": "Selected {station_number} — {station_name} ({station_region}). Save to use this station for current measurements. Your forecast location stays unchanged.",
+        "data": {
+          "aws_station_id": "Selected AWS station"
+        },
+        "data_description": {
+          "aws_station_id": "The nearest usable station is selected. You can choose a different nearby station here; doing so switches to manual selection."
+        }
       }
     },
     "error": {
@@ -102,7 +108,7 @@
       "reconfigure_successful": "Current-weather source configuration updated successfully."
     },
     "progress": {
-      "aws_discovering": "Discovering AWS station coordinates and checking recent observations…"
+      "aws_discovering": "Checking {checked} of {total} catalog stations. The first search needs to retrieve their coordinates; later searches reuse the cache. Cancel and choose manually to skip the scan."
     }
   },
   "entity": {
@@ -145,6 +151,29 @@
       },
       "station_pressure": {
         "name": "Station pressure"
+      },
+      "selected_aws_station": {
+        "name": "Selected AWS station"
+      },
+      "aws_station_status": {
+        "name": "AWS station status",
+        "state": {
+          "online": "Online with recent observations",
+          "offline": "Offline",
+          "stale": "Observations are stale",
+          "no_observations": "No usable observations",
+          "connection_error": "Could not fetch station data"
+        }
+      }
+    },
+    "select": {
+      "aws_station": {
+        "name": "AWS station (current region)"
+      }
+    },
+    "weather": {
+      "aws_weather": {
+        "name": "Weather (modeled condition)"
       }
     }
   },
@@ -157,6 +186,12 @@
     },
     "update_failed": {
       "message": "Unable to update TMD forecast data. Home Assistant will retry automatically."
+    },
+    "invalid_aws_selection": {
+      "message": "Choose a station listed in the AWS station dropdown."
+    },
+    "aws_station_change_failed": {
+      "message": "Could not validate the selected AWS station. The previous station is still selected. Try again later."
     }
   },
   "options": {

@@ -82,6 +82,12 @@ async def test_automatic_setup(hass, mock_client, mock_aws_client, config_entry)
     if result["type"] == FlowResultType.SHOW_PROGRESS_DONE:
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
     assert result["step_id"] == "aws_confirm"
+    assert result["data_schema"]({})["aws_station_id"] == "2"
+    selector = next(iter(result["data_schema"].schema.values()))
+    assert any(
+        "Tak Weather Observing Station" in choice["label"]
+        for choice in selector.config["options"]
+    )
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
     entry = result["result"]
@@ -167,7 +173,12 @@ async def test_runtime_values_diagnostics_and_offline_forecasts(
     assert entity.native_wind_speed == pytest.approx(1.0288888889)
     assert entity.native_pressure == 998
     assert entity.native_visibility == 1.5
-    assert entity.condition is None
+    assert entity.condition == "rainy"
+    assert entity.extra_state_attributes["condition_source"] == "nwp_model"
+    weather_id = hass.states.async_entity_ids("weather")[0]
+    assert (
+        "modeled condition" in hass.states.get(weather_id).attributes["friendly_name"]
+    )
     assert entity.extra_state_attributes["pressure_type"] == "station"
     aws = aws_setup.runtime_data.aws_coordinator
     assert aws.update_interval == timedelta(minutes=10)
@@ -339,7 +350,7 @@ async def test_discovery_cancelled_with_flow(
     never = asyncio.Event()
     cancelled = asyncio.Event()
 
-    async def discover(latitude, longitude):
+    async def discover(latitude, longitude, progress=None):
         started.set()
         try:
             await never.wait()

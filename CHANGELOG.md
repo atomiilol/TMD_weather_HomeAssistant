@@ -3,6 +3,31 @@
 Versions follow semantic versioning. A version becomes available through HACS
 after the corresponding GitHub Release is published; a tag alone is insufficient.
 
+## 0.5.0b2 — 2026-10-14
+
+**AWS stations beta. Requires Home Assistant 2026.10.1 or later.**
+
+- Show automatic discovery counts/progress and persist the six-hour public
+  station-coordinate cache across Home Assistant restarts. The first uncached
+  scan still requires fetching catalog stations; manual selection skips it.
+- Replace the empty confirmation page with a station dropdown that displays the
+  automatically chosen station and nearby alternatives. Validate changes before
+  saving and record an overridden automatic selection as manual.
+- Add a persistent selected-station indicator, station-status sensor and station
+  control dropdown for the current region. Keep identity/control visible during
+  outages, and preserve the saved station and forecast coordinates on failures.
+- Use the existing NWP model's current-hour condition label for the weather card,
+  explicitly named Weather (modeled condition) and tagged condition_source=nwp_model.
+  All measurements remain AWS observations. Missing, expired or unsupported model
+  condition codes remain unknown; no sky condition is invented from measurements.
+- Subscribe to hourly model updates for the condition label while retaining
+  independent forecasts. Hide cached AWS readings after failed station refreshes.
+- Verify live AWS observation parsing and include a sanitized live response fixture
+  with embedded forecast/token metadata excluded.
+
+Field units still follow the supplied API evidence. UTC clock interpretation is
+consistent with the live hourly observations checked in development.
+
 ## 0.5.0b1 — 2026-10-14
 
 **AWS stations beta. Requires Home Assistant 2026.10.1 or later.**

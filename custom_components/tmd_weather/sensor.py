@@ -219,10 +219,84 @@ async def async_setup_entry(
 
     add_current_sensors()
     add_daily_sensors()
+    if runtime.aws_coordinator is not None:
+        async_add_entities([TMDAWSStationSensor(entry), TMDAWSStatusSensor(entry)])
     entry.async_on_unload(source.async_add_listener(add_current_sensors))
     entry.async_on_unload(
         runtime.daily_coordinator.async_add_listener(add_daily_sensors)
     )
+
+
+class TMDAWSStationSensor(
+    CoordinatorEntity[TMDAWSObservationDataUpdateCoordinator], SensorEntity
+):
+    """Always reveal which station supplies measurements, including during outages."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "selected_aws_station"
+
+    def __init__(self, entry: TMDWeatherConfigEntry) -> None:
+        coordinator = entry.runtime_data.aws_coordinator
+        assert coordinator is not None
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.unique_id}_aws_station"
+        self._attr_device_info = tmd_device_info(entry)
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def native_value(self) -> str:
+        return f"{self.coordinator.record.number} — {self.coordinator.record.name}"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | int | None]:
+        record = self.coordinator.record
+        return {
+            "aws_station_id": record.aws_id,
+            "region": record.region,
+            "station_type": record.station_type,
+        }
+
+
+class TMDAWSStatusSensor(TMDAWSStationSensor):
+    """Explain absent readings without hiding behind a generic unknown value."""
+
+    _attr_translation_key = "aws_station_status"
+    _attr_device_class = SensorDeviceClass.ENUM
+
+    def __init__(self, entry: TMDWeatherConfigEntry) -> None:
+        super().__init__(entry)
+        self._attr_unique_id = f"{entry.unique_id}_aws_station_status"
+        self._attr_options = [
+            "online",
+            "offline",
+            "stale",
+            "no_observations",
+            "connection_error",
+        ]
+
+    @property
+    def native_value(self) -> str:
+        if not self.coordinator.last_update_success or not self.coordinator.data:
+            return "connection_error"
+        response = self.coordinator.data
+        if not response.status.online:
+            return "offline"
+        if response.observation is None:
+            return "no_observations"
+        return "online" if response.available(dt_util.utcnow()) else "stale"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | int | None]:
+        response = self.coordinator.data
+        return {
+            **super().extra_state_attributes,
+            "last_observation": response.observation.timestamp.isoformat()
+            if response and response.observation
+            else None,
+        }
 
 
 class TMDCurrentSensor(

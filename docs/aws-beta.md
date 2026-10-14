@@ -1,4 +1,4 @@
-# TMD AWS stations beta — 0.5.0b1
+# TMD AWS stations beta — 0.5.0b2
 
 This feature lives on `beta/aws-stations`. It is experimental and does not change
 the stable `main` branch or replace the latest stable GitHub Release. Requires
@@ -11,12 +11,12 @@ The beta uses the same `tmd_weather` domain, so install one copy at a time.
 
 For HACS, add this repository as a custom **Integration** repository using the
 [README instructions](../README.md#installation). Opt in to beta/prerelease
-versions and select **v0.5.0b1** when downloading or redownloading the integration.
+versions and select **v0.5.0b2** when downloading or redownloading the integration.
 The GitHub prerelease is the supported beta version; merely adding the repository
 without selecting the beta continues to install the stable release.
 
 For a manual install, download the [beta branch ZIP](https://github.com/atomiilol/TMD_weather_HomeAssistant/archive/refs/heads/beta/aws-stations.zip)
-or the source ZIP from the `v0.5.0b1` prerelease. Copy the complete
+or the source ZIP from the `v0.5.0b2` prerelease. Copy the complete
 `custom_components/tmd_weather` folder into Home Assistant's `custom_components`
 directory, including its **data** directory. No separate catalog download is
 needed. Restart Home Assistant and refresh the browser/app after installation.
@@ -51,18 +51,43 @@ packaged unchanged. No station-list website is scraped. Region/type/name text is
 preserved, including original spellings. The live response must confirm the
 selected AWSID; differences in station names do not change identity.
 
+The automatic confirmation page contains a **Selected AWS station** dropdown,
+prefilled with the chosen station's number/name. Nearby alternatives include
+their distance. Choosing a different station uses manual selection and validates
+its response before saving.
+
+## See and change the selected station
+
+Open the integration's device page. **Selected AWS station** identifies the
+station even during outages. **AWS station status** reports online with recent
+observations, offline, stale observations, no usable observations or a connection
+error; its attributes include the latest observation time.
+
+Use **AWS station (current region)** to choose another station in the same region.
+The dropdown saves only after a valid response confirms its AWSID. For another
+region, use **Reconfigure → Manual → Region → Station**. Forecast coordinates and
+supported entity IDs are preserved. Add the station/status sensors and station
+selector to a dashboard through the usual entity picker.
+
 ## Discovery and polling
 
 The catalog has no coordinates. A first automatic scan may request each of its
 227 station IDs from `http://122.155.135.49/api/home/site/<AWSID>`. It uses at most
 **four concurrent requests**, a **10-second timeout per request**, and a
 **10-minute overall discovery limit**. The UI displays progress and supports
-cancellation. Use manual selection to avoid a complete discovery scan.
+cancellation, including how many catalog stations have been checked. Use manual
+selection to avoid a complete discovery scan. A live first scan from the cloud
+development environment took about 3 minutes 18 seconds; network conditions and
+TMD response times determine the actual duration.
 
-Station coordinates/status are cached in memory for **six hours**. Later automatic
-selections reuse that geometry and check candidate stations' current health/data.
-The cache is lost when Home Assistant restarts; the selected AWSID is persisted
-in the config entry, so restarting does **not** rediscover all stations.
+Station coordinates/status are cached for **six hours** and saved to Home
+Assistant storage, so a restart does not discard an unexpired coordinate cache.
+Later automatic selections reuse that geometry and freshly validate the chosen
+station. Stations already found offline or without usable recent observations
+are skipped for up to **ten minutes** to avoid immediately repeating slow checks.
+They become eligible for a new check after that short cache expires; fresh live
+evidence from polling or manual selection can clear it sooner. The selected AWSID
+is persisted in the config entry, so normal restarting still polls only that ID.
 Failed endpoints are skipped during discovery; a station whose geometry cannot
 be obtained cannot participate in the nearest-station comparison.
 
@@ -91,15 +116,21 @@ valid observation row and does not combine measurements from different hours.
 Rows with malformed clocks or future timestamps are excluded.
 
 `ONLINE = y` must accompany an actual recent observation. `CNCT_YN = y` alone
-does not establish availability. Unsupported current fields, including sky
-condition and dew point, are not fabricated.
+does not establish availability. Unsupported measured fields, including sky
+condition and dew point, are not fabricated. The weather card's **condition label**
+comes from the NWP model's current-hour `cond` value; measurements remain AWS
+observations. The weather entity is named **Weather (modeled condition)** and
+exposes `condition_source: nwp_model` separately from `measurement_source: aws_station`.
+If the model supplies no usable current-hour sky code, the condition remains
+unknown. Temperature and rainfall are never used to guess a sky condition.
 
 During AWS outages, measurement sensors become unavailable. The weather entity's
-current readings are absent and its condition is unknown; healthy hourly/daily
+current measured readings are absent. A healthy modeled condition and hourly/daily
 forecasts remain usable, including through `weather.get_forecasts`. Home Assistant
 filters unavailable entities out of that service, so the weather entity stays
 available while its forecast source is healthy. NWP measurements are never used
-as a fallback for AWS current readings.
+as a fallback for AWS current readings. The modeled condition label is the only
+current-weather field supplied by NWP.
 
 Hourly and daily forecasts keep the existing NWP provider, chosen source and
 **user's forecast coordinates**. Station coordinates never replace those values.
@@ -119,10 +150,12 @@ no redirects. HTTP does not authenticate or encrypt the observations themselves.
 
 The beta interprets `yyyy/mm/dd/hh` as **UTC** in one isolated helper, following
 the evidence supplied with the request. Field units also follow that supplied
-evidence. Development live verification was blocked by the cloud network
-allowlist; tests use synthetic responses based on the supplied schema. These
-assumptions need confirmation against live station measurements before a stable
-release. An environment draft adds the AWS IP for future live verification.
+evidence. Live AWS requests and automatic selection now work in development, and
+the parser was checked against a sanitized real response from station 2. Its
+hourly clock is consistent with UTC interpretation. Units still follow the
+supplied evidence and need confirmation before a stable release. Tests include
+synthetic responses and the sanitized live fixture; embedded forecast/token
+metadata is excluded.
 
 ## Test checklist
 
