@@ -66,15 +66,9 @@ def mock_observation_client(observation_json):
         parse_observations,
     )
 
-    with (
-        patch(
-            "custom_components.tmd_weather.TMDObservationClient", autospec=True
-        ) as factory,
-        patch(
-            "custom_components.tmd_weather.config_flow.TMDObservationClient",
-            new=factory,
-        ),
-    ):
+    with patch(
+        "custom_components.tmd_weather.TMDObservationClient", autospec=True
+    ) as factory:
         client = factory.return_value
         client.async_get_current_conditions.return_value = nearest_station(
             parse_observations(observation_json),

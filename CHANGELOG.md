@@ -3,6 +3,29 @@
 Versions follow semantic versioning. A version becomes available through HACS
 after the corresponding GitHub Release is published; a tag alone is insufficient.
 
+## 0.5.0 — 2026-10-14
+
+Requires **Home Assistant 2026.10.1 or later**.
+
+- Promote AWS physical station observations to the stable integration. New setup
+  offers AWS measurements or modeled NWP weather, with the existing NWP token
+  required for hourly/daily forecasts.
+- Remove observation API UID/UKEY fields from setup, reauthentication and
+  reconfiguration. AWS observations require no credentials. Existing saved legacy
+  entries remain compatible until explicitly changed; selecting AWS or modeled
+  weather removes their retired station keys without replacing the entry.
+- Report rejected saved legacy access as an observation failure with guidance to
+  reconfigure, rather than requesting an unrelated replacement NWP token.
+- Package the user's 227-station coordinate catalog unchanged. Rank nearby
+  stations locally and check live observations nearest first, stopping at the
+  first usable online station within 100 km. No extra geocoding API is required.
+- Include selected-station/status sensors, station controls and a confirmation
+  dropdown. AWS weather cards use the explicitly labeled NWP modeled condition;
+  current measurements remain AWS observations and forecasts retain their location.
+- Preserve existing sources, configuration, options and supported entity IDs on
+  upgrade. Regular AWS polling only requests the saved station every ten minutes.
+- Publish a normal stable GitHub release for HACS installation/update notifications.
+
 ## 0.5.0b3 — 2026-10-14
 
 **AWS stations beta. Requires Home Assistant 2026.10.1 or later.**

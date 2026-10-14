@@ -3054,7 +3054,7 @@ wheels = [
 
 [[package]]
 name = "tmd-weather-homeassistant"
-version = "0.5.0b3"
+version = "0.5.0"
 source = { virtual = "." }
 
 [package.dev-dependencies]

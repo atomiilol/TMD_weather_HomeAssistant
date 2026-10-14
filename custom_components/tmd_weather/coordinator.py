@@ -164,7 +164,15 @@ class TMDObservationDataUpdateCoordinator(
 
     async def _async_update_data(self) -> StationObservation:
         """Reselect from fresh stations if a station disappears or lacks data."""
-        return await _async_fetch(self.client.async_get_current_conditions)
+        try:
+            return await _async_fetch(self.client.async_get_current_conditions)
+        except ConfigEntryAuthFailed:
+            # Saved legacy entries remain readable, but their retired credentials
+            # cannot be replaced in the NWP-only reauthentication dialog.
+            raise UpdateFailed(
+                translation_domain=DOMAIN,
+                translation_key="legacy_observations_unavailable",
+            ) from None
 
 
 class TMDAWSObservationDataUpdateCoordinator(

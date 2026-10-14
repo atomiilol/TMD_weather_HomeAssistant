@@ -7,35 +7,35 @@ A UI-configured custom integration using official Thai Meteorological Department
 
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=atomiilol&repository=TMD_weather_HomeAssistant&category=integration)
 
-**AWS stations beta — 0.5.0b3:** this branch adds physical AWS current observations,
-automatic nearest-station selection and manual region/name selection from the
-supplied local catalog. Existing installations keep their current source until
-reconfigured. Hourly/daily forecasts keep their existing provider and coordinates.
-Station coordinates now let automatic selection rank candidates locally and check
-only the nearest stations until it finds usable recent observations.
-See [beta installation, behavior and test instructions](docs/aws-beta.md).
+**Version 0.5.0:** physical AWS station observations, local nearest-station
+selection, manual region/name selection and independent NWP forecasts.
+See [AWS station setup and behavior](docs/aws-stations.md).
 
-## Note
+## Current weather
 
-Current weather uses **actual Weather3Hours station observations when separate
-observation credentials are supplied**. Without those optional credentials, it
-uses explicitly modeled NWP estimates. The selected source is disclosed in setup,
-device information and diagnostics and never changes silently during outages.
+New installations default to **AWS physical station**. Station measurements need
+no observation credentials. Choose **Modeled NWP weather** to use model estimates
+instead. An NWP token is required for forecasts in either mode. AWS weather cards
+use an explicitly labeled modeled condition from NWP alongside real station
+measurements; current measurements never switch source during an outage.
+
+Existing installations keep their saved source until reconfigured. Saved legacy
+Weather3Hours entries remain compatible. Their retired credential fields are no
+longer shown; selecting AWS or modeled weather clears those old credentials.
 
 ## Features
 
-- One `weather` entity per coordinate: station temperature, humidity, sea-level
-  pressure, wind, visibility and dew point when observation access is configured;
-  otherwise modeled current conditions.
+- One `weather` entity per coordinate: AWS temperature, humidity, station pressure,
+  wind and supported visibility, or explicitly modeled NWP current measurements.
 - Hourly forecasts (up to 48 hours) and daily forecasts (up to 7 days), including
   rainfall amounts and daily high/low temperatures.
 - Optional **Domain 2** source for modeled current weather and hourly forecasts,
   using the model TMD currently documents as a 3 km grid.
 - One rainfall sensor: **Station rainfall** or **Modeled rainfall this hour**,
   according to the configured current source; never a cumulative counter or probability.
-- Separate sensors for temperature, humidity, sea-level pressure, wind speed,
-  wind direction, dew point and visibility, plus today's forecast high/low
-  temperatures and rainfall. All share the existing weather/forecast caches.
+- Separate supported measurement sensors and today's forecast high/low temperature
+  and rainfall sensors, sharing weather/forecast caches. A station indicator,
+  status sensor and region station selector identify and control the AWS source.
 - UI setup using HA's coordinates by default, duplicate detection, reauthentication,
   English/Thai translations and redacted diagnostics.
 - Bounded async requests, rate-limit backoff and recovery from temporary failures.
@@ -48,8 +48,8 @@ timestamped weather coordinators. Future releases still need compatibility testi
 ## Separate sensor entities
 
 Each configured location has one weather entity and sensors for the measurements
-TMD supplies. A full station dataset provides eleven sensors; modeled weather
-normally provides nine because its source has no dew point or visibility.
+TMD supplies. AWS visibility appears only when a station reports a visibility
+sensor. AWS and modeled NWP do not provide dew point.
 Use the sensors directly in dashboards, automations and history, as with
 AccuWeather's separate measurement entities. Find them under **Settings → Devices
 & services → Thai Meteorological Department (TMD)** and open your location's device.
@@ -58,20 +58,20 @@ AccuWeather's separate measurement entities. Find them under **Settings → Devi
 | --- | --- | --- |
 | Temperature | °C | Configured current source |
 | Humidity | % | Configured current source |
-| Sea-level pressure | hPa | Configured current source |
+| Station / sea-level pressure | hPa | AWS station pressure / NWP sea-level pressure |
 | Wind speed | m/s | Configured current source |
 | Wind direction | ° | Configured current source |
-| Dew point | °C | Station observations only |
-| Visibility | km | Station observations only |
+| Visibility | km | AWS stations with a visibility sensor |
+| Selected AWS station | — | Saved station number/name |
+| AWS station status | — | Online/offline/stale/connection status |
 | Station rainfall / Modeled rainfall this hour | mm | Configured current source |
 | Forecast high temperature today | °C | Daily NWP forecast |
 | Forecast low temperature today | °C | Daily NWP forecast |
 | Forecast rainfall today | mm | Daily NWP forecast |
 
 Current sensors use the same station or modeled values as the weather entity.
-Their `data_source` attribute identifies `station` or `nwp_model`; they never switch
-sources during outages. Dew point and visibility sensors are omitted without
-station observations. New optional sensors are added only after TMD supplies
+Their `data_source` attribute identifies `aws_station` or `nwp_model` (`station`
+for compatible legacy entries); they never switch sources during outages. New optional sensors are added only after TMD supplies
 values, including when they first appear in a later update. Missing readings on
 previously supported sensors, expired data or a failed update make those sensors
 **unavailable**, while preserving their IDs for recovery.
@@ -91,14 +91,12 @@ statistics. Home Assistant handles supported display-unit conversions.
 4. Select **Submit**. The setting takes effect automatically; it also survives
    Home Assistant restarts. You do not need to re-enter credentials.
 
-The interval applies to current conditions and active hourly/daily forecast
-polling. Sensors share those caches, so each sensor does not make its own request.
-Until you save an interval, the original defaults remain: modeled/hourly data
-every 60 minutes, station observations every 30 minutes, and daily forecasts every
-180 minutes. The options dialog starts at 60 minutes for modeled locations or 30
-minutes for station locations. Saving a value sets that same interval for all
-active datasets. Hourly forecasts in station mode also refresh on demand when no
-dashboard subscribes to them.
+The interval applies to NWP modeled current weather and active hourly/daily
+forecast polling. **AWS station observations retain their separate ten-minute
+interval.** Sensors share those caches rather than making individual requests.
+Until an interval is saved, hourly forecasts default to 60 minutes and daily
+forecasts to 180 minutes; compatible legacy observations default to 30 minutes.
+Hourly forecasts in station mode also refresh on demand without subscribers.
 
 Polling more often does not make TMD publish fresh data sooner. Authentication
 handling, request timeouts and the existing server rate-limit backoff continue to
@@ -130,7 +128,7 @@ Thai labels and error explanations.
 Domain 2 changes **modeled current conditions and hourly forecasts**. If station
 observations are configured, they remain the source of current measurements.
 To use modeled Domain 2 values for current weather too, use **Reconfigure** and
-turn off **Use station observations**.
+select **Modeled NWP weather**.
 Daily forecasts keep their existing coordinate endpoint; they are not relabeled
 as Domain 2 or as 3 km data. The existing forecast source remains the default.
 
@@ -144,8 +142,8 @@ bounding-box request. Locations without a suitable point cannot select this sour
 **API version and model domain are separate.** This option uses the documented
 `/nwpapi/v1/forecast/area/box` endpoint with `domain=2`, `bottom-left`, `top-right`,
 `starttime`, `endtime` and the existing hourly fields. It does not use `/nwpapi/v2/`:
-both tested coordinate `/v2/` routes returned HTTP 404. The optional station API
-already uses `Weather3Hours/V2`, which is a separate service.
+both tested coordinate `/v2/` routes returned HTTP 404. AWS observations use a
+separate station-detail endpoint.
 
 The [area endpoint documentation](https://data.tmd.go.th/nwpapi/doc/apidoc/forecast_area.html)
 still has older resolution figures and an offset-free response example. The adapter
@@ -181,19 +179,19 @@ to open a separate Integrations tab.
 
 1. Copy the entire `custom_components/tmd_weather` directory to
    `/config/custom_components/tmd_weather/`. That directory must directly contain
-   `manifest.json`, the Python modules, `brand/` and `translations/`.
+   `manifest.json`, the Python modules, `brand/`, `translations/` and **`data/`**.
 2. Restart Home Assistant.
 
 ### Configure after either installation method
 
 1. Open **Settings → Devices & services → Add integration** and search for
    **Thai Meteorological Department (TMD)**.
-2. Enter your NWP bearer token and check the default Home Assistant coordinates.
-3. To use physical station observations, supply both optional **Observation API
-   uid** and **Observation API ukey** fields. They are separate from the NWP token.
-   Leave both empty to choose modeled current conditions explicitly.
-4. Submit. Setup validates forecasts and the selected current source before
-   creating entities. No integration YAML is needed.
+2. Enter your NWP token and check the Home Assistant forecast coordinates.
+3. Choose **AWS physical station** for measurements, or **Modeled NWP weather**.
+4. For AWS, choose automatic selection using Home Assistant's location, or select
+   a region and station manually. Automatic selection ranks the local coordinates
+   and checks nearby stations nearest first. Review the chosen station before saving.
+5. Finish setup. No observation UID/UKEY or integration YAML is needed.
 
 HACS installs/updates files only. A manually installed copy has identical behavior
 and does not require HACS at runtime.
@@ -208,74 +206,46 @@ to change coordinates. Use the integration menu in **Devices & services** to rem
 
 Forecasts require an **NWP bearer access token**, sent as
 `Authorization: Bearer <token>` to fixed HTTPS NWP endpoints. Enter just the token,
-without `Bearer `. Legacy `uid` / `ukey` credentials are a different scheme.
+without `Bearer `. AWS station measurements require no token or key.
 
 Following TMD's [official getting-started guide](https://data.tmd.go.th/nwpapi/doc/main/getting_start.html):
 
-1. [Register for NWP access](https://data.tmd.go.th/nwpapi/register), providing the
-   information and purpose requested by TMD.
+1. [Register for NWP access](https://data.tmd.go.th/nwpapi/register).
 2. [Log in](https://data.tmd.go.th/nwpapi/login).
-3. Under **Personal Access Tokens**, select **Create New Token** and give it a
-   recognizable name.
-4. Copy the token immediately: TMD says it is displayed only once. Enter it in
-   the integration's secret token field.
+3. Under **Personal Access Tokens**, select **Create New Token**.
+4. Copy the token immediately and enter it in the integration's secret field.
 
-The documentation calls this OAuth 2.0 but explicitly supports token creation
-through its website only. It does not document an authorization-code/refresh-token
-grant or a fixed token lifetime. Manual personal tokens and HA reauthentication
-therefore match the documented flow. Registration and login pages returned
-HTTP 200 during verification, without creating an account.
+TMD documents website-issued personal tokens, with no automatic refresh grant or
+fixed token lifetime established. NWP HTTP 401/403 errors start Home Assistant
+reauthentication for that token. Credentials remain in config-entry storage and
+are redacted from diagnostics. They are never sent to the public AWS endpoint.
 
-An HTTP 401/403 starts HA reauthentication. A replacement token is validated and
-the same location entry is reloaded. Credentials stay in HA config-entry storage;
-they are excluded from entity attributes, device identifiers, integration
-logs and diagnostics. Treat configuration backups as sensitive.
-
-### Separate station-observation credentials
-
-Weather3Hours uses legacy **uid/ukey query authentication over HTTPS**, documented
-in TMD's [Weather3Hours reference](https://data.tmd.go.th/api/doc/reference/Weather3Hours_ver2.pdf).
-These credentials cannot be exchanged for an NWP bearer token. Use your assigned
-observation credentials. TMD's [API catalog](https://data.tmd.go.th/api/index1.php)
-also publishes example-access links that worked during verification; their access
-is not guaranteed permanently and no demo key is hard-coded in this integration.
-A separate legacy credential-issuance/refresh process is not documented in the
-sources inspected; contact TMD if assigned access is required.
-
-The observation protocol necessarily sends uid/ukey in the HTTPS request query.
-The integration suppresses request URLs and raw errors in its own logs/diagnostics;
-avoid enabling external HTTP tracing that might record those queries. NWP tokens
-are sent only in headers.
-
-To add, replace or disable station access later, use the integration entry's
-**Reconfigure** action. Toggle **Use station observations** and provide the
-credential pair when enabling it. Existing coordinates, configuration and entity
-IDs are preserved. Reauthentication can replace the NWP token and/or legacy pair.
+Use the entry's **Reconfigure** action to change current-weather source or station.
+Your NWP token, forecast coordinates and supported entity IDs are preserved.
+Saved legacy station access continues working until explicitly changed; if that
+access is rejected, reconfigure to AWS or modeled weather.
 
 ## Sources, polling and time
 
-| Dataset | Official source | Implementation |
+| Dataset | Source | Implementation |
 | --- | --- | --- |
-| Current station weather | `https://data.tmd.go.th/api/Weather3Hours/V2/` | Nearest fresh station; 30-minute default, configurable |
-| Modeled current weather | Current NWP hourly timestep | Used only when observation credentials are absent |
-| Hourly forecast | `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at` | Request 48 hours; 60-minute default, configurable; on demand without subscribers |
-| Domain 2 hourly forecast (optional) | `https://data.tmd.go.th/nwpapi/v1/forecast/area/box` with `domain=2` | Small area request, nearest grid point within 3 km; same hourly cache/interval |
-| Daily forecast | `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at` | Request 7 days; 180-minute default, configurable; on demand when stale |
-| Other observations | WeatherToday / station catalog | Researched; Weather3Hours already includes the metadata needed for station selection |
+| AWS current measurements | `http://122.155.135.49/api/home/site/<AWSID>` | Saved station; every 10 minutes; no credentials |
+| Modeled current weather | Current NWP hourly timestep | Explicit modeled source |
+| Hourly forecast | `https://data.tmd.go.th/nwpapi/v1/forecast/location/hourly/at` | Up to 48 hours; 60-minute default, configurable |
+| Domain 2 hourly forecast | `https://data.tmd.go.th/nwpapi/v1/forecast/area/box` with `domain=2` | Nearest grid point within 3 km; shared hourly cache |
+| Daily forecast | `https://data.tmd.go.th/nwpapi/v1/forecast/location/daily/at` | 7 days; 180-minute default, configurable |
 
-Observed current conditions use a separate coordinator from hourly/daily forecasts.
-Either forecast can fail while observed weather remains available. An observation
-failure makes current weather unavailable and retains the last cache for recovery;
-it never silently substitutes an NWP estimate. All configured datasets must pass
-their first refresh. In modeled mode, current conditions share the hourly cache.
+AWS selection uses the supplied 227-station coordinate catalog, sorts candidates
+within **100 km** locally, and checks their live responses nearest first. It stops
+at the first online station with usable observations no older than **three hours**.
+Candidates across region borders remain eligible. A healthy nearest station needs
+one request even during first setup; no external geocoding API is used.
 
-Station selection filters missing/invalid temperatures, coordinates and timestamps,
-chooses the closest usable station within **100 km**, and rejects observations
-older than **6 hours** or dated in the future. These are integration safety policies,
-not TMD coverage guarantees. Equal-distance ties use the WMO ID. A removed/stale
-station is replaced by the next nearest valid one using the same dataset, without
-moving the forecast coordinate or changing entity IDs. No separate station-list
-download is needed on every refresh.
+Regular polling only requests the saved station. A later station outage makes
+current readings unavailable while healthy NWP forecasts remain accessible.
+The integration retains the selection until you reconfigure it. It never silently
+substitutes modeled measurements or moves the forecast coordinates.
+See [AWS station details](docs/aws-stations.md) for units, timestamps and status.
 
 Fresh attribute/forecast reads make no extra request. With entities enabled and a
 daily subscriber, default scheduled traffic is about 24 hourly + 8 daily requests
@@ -284,8 +254,8 @@ conservative polling choices, independent of model publication cadence. TMD's gu
 documents **60 requests/minute and 100,000 datapoints/hour**, where datapoints are
 locations × duration × fields. Its later header descriptions inconsistently say
 "hour" for the request limit, so deployments should honor actual server limits.
-Observation mode adds approximately 48 observation requests/day by default; its quota is not
-specified in the inspected legacy reference. HA handles retries. NWP HTTP 429
+AWS mode adds approximately 144 station requests/day by default; its quota is not
+verified. HA handles retries. NWP HTTP 429
 honors `Retry-After` for both forecast endpoints of that entry;
 an absent/invalid header defaults to one hour. The client never loops or sleeps.
 
@@ -296,9 +266,9 @@ as current. That interval interpretation still needs live TMD confirmation.
 Diagnostics distinguish forecast **valid times** from fetch times; no model
 issuance time is invented.
 
-Live Weather3Hours JSON uses numeric strings and `MM/DD/YYYY HH:MM:SS` timestamps.
-The parser handles them explicitly in Bangkok time, confirmed across the
-October 11/12 rollover. It does not mistake them for the offset-aware NWP format.
+For compatible saved Weather3Hours entries, the legacy parser handles numeric
+strings and `MM/DD/YYYY HH:MM:SS` timestamps in Bangkok time. AWS's separate
+hourly clock interpretation and units are described in the station guide.
 
 ## Field mapping
 
@@ -317,7 +287,10 @@ October 11/12 rollover. It does not mistake them for the offset-aware NWP format
 | `psfc` | Not requested | Do not confuse surface Pa with sea-level hPa |
 | `swdown` | Not requested/exposed | Shortwave radiation is not UV index |
 
-| Weather3Hours field | Current HA value | Native units |
+AWS measurement fields are documented in [the station guide](docs/aws-stations.md#measurements-and-forecasts).
+The following table applies only to previously saved Weather3Hours entries.
+
+| Legacy Weather3Hours field | Current HA value | Native units |
 | --- | --- | --- |
 | `AirTemperature` | `native_temperature` | °C |
 | `RelativeHumidity` | `humidity` | % |
@@ -352,10 +325,11 @@ the official hourly/daily field tables. Clear conditions use `sunny`;
 astronomical day/night refinement is not implemented. No sky condition is inferred
 from temperature alone.
 
-**Weather3Hours supplies no sky-condition code.** In station mode the current
-condition/icon can therefore be unknown even while temperature and other
-measurements are available. Forecast icons still use verified NWP condition codes.
-The integration does not borrow a forecast icon and label it as an observation.
+AWS does not provide a sky-condition code. Its weather entity is explicitly named
+**Weather (modeled condition)** and uses NWP's current-hour code for the icon/label.
+Attributes identify `condition_source=nwp_model` and `measurement_source=aws_station`.
+Missing, expired or unsupported model codes still produce an unknown condition.
+AWS temperature, wind, humidity and pressure remain observed measurements.
 
 ## Limitations and troubleshooting
 
@@ -363,12 +337,13 @@ The integration does not borrow a forecast icon and label it as an observation.
   coverage, exact rainfall interval alignment and model publication schedules
   remain unverified. Official endpoint/auth/schema/field documentation is verified.
 - Total cloud cover, apparent temperature, UV, precipitation probability, warnings
-  and radar are not exposed without a verified source. Visibility/dew point are
-  available only from station observations.
+  and radar are not exposed without a verified source. AWS visibility requires a
+  reported sensor; dew point is not supplied by AWS or modeled NWP.
 - Unknown icons with valid measurements are expected when `cond` only describes
   temperature or is missing/unrecognized.
-- **Cannot connect:** check Internet/DNS and HTTPS access to `data.tmd.go.th`.
-  Requests time out after 10 seconds.
+- **Cannot connect:** check Internet/DNS and HTTPS access to `data.tmd.go.th`,
+  plus HTTP access to `122.155.135.49` for AWS. Station requests time out after
+  10 seconds; Domain 2 requests allow up to 60 seconds.
 - **Invalid authentication:** use an NWP token, not a legacy key pair. HA starts
   reauthentication automatically for authentication failures during updates.
 - **Rate limited:** wait. Manual refreshes do not bypass the existing client's cooldown.
@@ -412,7 +387,7 @@ uv run --frozen pytest tests/components/tmd_weather --cov --cov-report=term-miss
 uv run --frozen ruff check custom_components tests script
 uv run --frozen ruff format --check custom_components tests script
 uv run --frozen mypy custom_components/tmd_weather script/check_release.py
-uv run --frozen python script/check_release.py --tag v0.5.0b3
+uv run --frozen python script/check_release.py --tag v0.5.0
 ```
 
 `uv.lock` pins development dependencies, including HA 2026.10.1. Tests use real

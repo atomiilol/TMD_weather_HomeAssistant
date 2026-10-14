@@ -1,4 +1,7 @@
-# TMD AWS stations beta — 0.5.0b3
+# TMD AWS stations beta — 0.5.0b3 (historical)
+
+AWS support is now in stable 0.5.0. See the [current station guide](aws-stations.md).
+The instructions below describe the historical beta release.
 
 This feature lives on `beta/aws-stations`. It is experimental and does not change
 the stable `main` branch or replace the latest stable GitHub Release. Requires

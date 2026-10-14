@@ -45,7 +45,7 @@ and the validation check should remain enabled.
 3. Run the tests/lint/types from the README, plus:
 
    ```sh
-   uv run --frozen python script/check_release.py --tag v0.4.0
+   uv run --frozen python script/check_release.py --tag v0.5.0
    ```
 
    Substitute the proposed version for later releases. The check rejects a tag
@@ -56,8 +56,8 @@ and the validation check should remain enabled.
 5. Create an annotated version tag on the tested commit, then push that tag:
 
    ```sh
-   git tag -a v0.4.0 -m "Release v0.4.0" <tested-commit-sha>
-   git push origin v0.4.0
+   git tag -a v0.5.0 -m "Release v0.5.0" <tested-commit-sha>
+   git push origin v0.5.0
    ```
 
    Use the next semantic version for subsequent releases; never move or reuse
@@ -80,7 +80,7 @@ HACS identifies the integration content inside the chosen ref.
 
 If a publishing run fails, fix the cause and rerun it from GitHub Actions. For an
 existing tag whose release has not been published, **Run workflow** with that tag
-selected, or use `gh workflow run release.yml --ref v0.4.0`. Dispatching on a
+selected, or use `gh workflow run release.yml --ref v0.5.0`. Dispatching on a
 branch is rejected. An existing published release is left intact during retries.
 Do not overwrite a published release to distribute changes: create a new version.
 
@@ -98,8 +98,10 @@ not delete the integration or re-enter existing credentials for ordinary upgrade
 
 The integration stores runtime state in `entry.runtime_data` and configuration
 in HA's config entries. Coordinate unique IDs and the existing rainfall sensor
-ID are preserved when enabling/disabling station observations. Optional observation
-credentials are additive; existing version-1 modeled entries continue to load.
+ID are preserved when enabling/disabling station observations. Existing version-1 entries continue to load, including previously saved legacy
+station credentials. New configuration dialogs offer AWS or modeled NWP without
+observation credential fields. Explicitly changing sources clears retired keys
+while preserving the location, NWP token and supported entity IDs.
 If a future release changes stored data incompatibly, increment config-entry
 schema version and implement/test `async_migrate_entry` before that release.
 

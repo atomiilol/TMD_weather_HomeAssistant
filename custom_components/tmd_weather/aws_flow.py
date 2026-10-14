@@ -308,7 +308,7 @@ class AWSStationSelectionFlow(ConfigFlow):
         """Save the AWSID while retaining the user's forecast location."""
         if self._aws_reconfigure:
             return self.async_update_reload_and_abort(
-                self._get_reconfigure_entry(), data_updates=self._aws_pending
+                self._get_reconfigure_entry(), data=self._aws_pending
             )
         latitude, longitude = (
             self._aws_pending[CONF_LATITUDE],

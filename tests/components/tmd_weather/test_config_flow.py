@@ -31,11 +31,11 @@ async def test_user_defaults_and_success(hass, mock_client):
     )
     assert result["type"] == FlowResultType.FORM
     data = result["data_schema"](
-        {"access_token": "test-secret", "current_source": "legacy"}
+        {"access_token": "test-secret", "current_source": "nwp_model"}
     )
     assert data == {
         "access_token": "test-secret",
-        "current_source": "legacy",
+        "current_source": "nwp_model",
         "latitude": 13.75,
         "longitude": 100.5,
     }
@@ -131,6 +131,29 @@ async def test_coordinate_validation(hass):
         result["data_schema"](
             {"access_token": "test-secret", "latitude": 13, "longitude": -181}
         )
+
+
+@pytest.mark.parametrize("source", ["user", "reauth", "reconfigure"])
+@pytest.mark.parametrize("field", ["observation_uid", "observation_key"])
+async def test_retired_credential_fields_are_absent(hass, config_entry, source, field):
+    """Actual UI schemas reject retired fields in every configuration dialog."""
+    if source == "user":
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": source}
+        )
+    else:
+        config_entry.add_to_hass(hass)
+        if source == "reauth":
+            result = await config_entry.start_reauth_flow(hass)
+        else:
+            result = await hass.config_entries.flow.async_init(
+                DOMAIN,
+                context={"source": source, "entry_id": config_entry.entry_id},
+            )
+    valid = {} if source == "reconfigure" else {"access_token": "replacement-secret"}
+    assert field not in result["data_schema"](valid)
+    with pytest.raises(probatio.Invalid):
+        result["data_schema"]({**valid, field: "retired-secret"})
 
 
 @pytest.mark.parametrize(

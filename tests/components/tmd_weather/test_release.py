@@ -11,7 +11,7 @@ from script.check_release import ROOT, main, release_notes, validate
 
 def test_release_and_hacs_layout():
     """The proposed release has one integration and uses standard HACS refs."""
-    assert validate(tag="v0.5.0b3") == "0.5.0b3"
+    assert validate(tag="v0.5.0") == "0.5.0"
     hacs = json.loads((ROOT / "hacs.json").read_text())
     assert hacs["name"] == "Thai Meteorological Department (TMD)"
     assert hacs["country"] == "TH"
@@ -42,9 +42,7 @@ def release_copy(tmp_path):
 def test_project_version_mismatch(release_copy):
     """Do not distribute divergent project and integration versions."""
     path = release_copy / "pyproject.toml"
-    path.write_text(
-        path.read_text().replace('version = "0.5.0b3"', 'version = "0.5.0"')
-    )
+    path.write_text(path.read_text().replace('version = "0.5.0"', 'version = "0.5.1"'))
     with pytest.raises(ValueError, match="versions differ"):
         validate(release_copy)
 
@@ -70,27 +68,27 @@ def test_missing_aws_catalog(release_copy):
         validate(release_copy)
 
 
-def test_prerelease_workflow_metadata(tmp_path, monkeypatch):
-    """The validated beta instructs the publisher to avoid the latest stable slot."""
+def test_stable_workflow_metadata(tmp_path, monkeypatch):
+    """The validated stable release uses the publisher's latest-release slot."""
     output = tmp_path / "github-output"
     monkeypatch.setattr(
         "sys.argv",
-        ["check_release.py", "--tag", "v0.5.0b3", "--github-output", str(output)],
+        ["check_release.py", "--tag", "v0.5.0", "--github-output", str(output)],
     )
     main()
-    assert output.read_text() == "version=0.5.0b3\nprerelease=true\n"
+    assert output.read_text() == "version=0.5.0\nprerelease=false\n"
 
 
-def test_stable_versions_still_valid(release_copy):
-    """Prerelease support preserves the original stable-release conventions."""
+def test_beta_versions_still_valid(release_copy):
+    """A later beta keeps the prerelease version conventions after promotion."""
     for name in (
         "custom_components/tmd_weather/manifest.json",
         "pyproject.toml",
         "CHANGELOG.md",
     ):
         path = release_copy / name
-        path.write_text(path.read_text().replace("0.5.0b3", "0.5.0"))
-    assert validate(release_copy, tag="v0.5.0") == "0.5.0"
+        path.write_text(path.read_text().replace("0.5.0", "0.6.0b1"))
+    assert validate(release_copy, tag="v0.6.0b1") == "0.6.0b1"
 
 
 def test_release_notes(release_copy):

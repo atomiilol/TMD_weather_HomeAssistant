@@ -283,7 +283,7 @@ async def test_diagnostics(hass, station_setup):
 async def test_station_config_flow(
     hass, station_config_entry, mock_client, mock_observation_client
 ):
-    """Validate both datasets and a usable station before creating the entry."""
+    """New entries cannot retain retired credentials supplied outside the UI."""
     with patch("custom_components.tmd_weather.async_setup_entry", return_value=True):
         result = await hass.config_entries.flow.async_init(
             "tmd_weather",
@@ -292,22 +292,26 @@ async def test_station_config_flow(
         )
         await hass.async_block_till_done()
     assert result["type"] == "create_entry"
-    mock_observation_client.async_get_current_conditions.assert_awaited_once_with()
+    mock_observation_client.async_get_current_conditions.assert_not_awaited()
+    assert "observation_uid" not in result["data"]
+    assert "observation_key" not in result["data"]
 
 
 async def test_unpaired_credentials(hass, config_entry, mock_client):
-    """One observation field is a setup error rather than a silent model choice."""
-    result = await hass.config_entries.flow.async_init(
-        "tmd_weather",
-        context={"source": "user"},
-        data={**config_entry.data, "observation_uid": "uid"},
-    )
-    assert result["errors"] == {"base": "observation_credentials_required"}
-    mock_client.async_get_hourly_forecast.assert_not_awaited()
+    """Ignored retired fields never prevent a valid forecast configuration."""
+    with patch("custom_components.tmd_weather.async_setup_entry", return_value=True):
+        result = await hass.config_entries.flow.async_init(
+            "tmd_weather",
+            context={"source": "user"},
+            data={**config_entry.data, "observation_uid": "uid"},
+        )
+        await hass.async_block_till_done()
+    assert result["type"] == "create_entry"
+    assert "observation_uid" not in result["data"]
 
 
 async def test_reconfigure_preserves_entities(
-    hass, setup_entry, mock_observation_client, entity_registry
+    hass, setup_entry, mock_aws_client, entity_registry
 ):
     """Enable stations on an existing model entry without losing entity identity."""
     old = {
@@ -322,14 +326,21 @@ async def test_reconfigure_preserves_entities(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         {
-            "use_observations": True,
-            "observation_uid": "test-uid",
-            "observation_key": "test-observation-secret",
+            "current_source": "aws_station",
         },
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"aws_selection_mode": "manual"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"region": "Northern"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"aws_station_id": "2"}
     )
     await hass.async_block_till_done()
     assert result["reason"] == "reconfigure_successful"
-    assert setup_entry.runtime_data.observation_coordinator is not None
+    assert setup_entry.runtime_data.aws_coordinator is not None
     new = {
         entry.unique_id: entry.entity_id
         for entry in entity_registry.entities.values()
@@ -345,24 +356,26 @@ async def test_disable_observations(hass, station_setup):
         context={"source": "reconfigure", "entry_id": station_setup.entry_id},
     )
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"use_observations": False}
+        result["flow_id"], {"current_source": "nwp_model"}
     )
     await hass.async_block_till_done()
     assert result["reason"] == "reconfigure_successful"
     assert station_setup.runtime_data.observation_coordinator is None
     assert TMDWeatherEntity(station_setup).native_temperature == 30.5
+    assert "observation_uid" not in station_setup.data
+    assert "observation_key" not in station_setup.data
 
 
 async def test_station_reauth_keeps_token(hass, station_setup, mock_observation_client):
-    """Replace a legacy key without making the user replace a valid NWP token."""
+    """NWP reauthentication preserves a saved legacy source and its station keys."""
     result = await station_setup.start_reauth_flow(hass)
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"observation_key": "replacement-legacy-secret"}
+        result["flow_id"], {"access_token": "replacement-nwp-secret"}
     )
     await hass.async_block_till_done()
     assert result["reason"] == "reauth_successful"
-    assert station_setup.data["access_token"] == "test-secret"
-    assert station_setup.data["observation_key"] == "replacement-legacy-secret"
+    assert station_setup.data["access_token"] == "replacement-nwp-secret"
+    assert station_setup.data["observation_key"] == "test-observation-secret"
 
 
 async def test_observation_first_refresh_failure(
@@ -378,44 +391,38 @@ async def test_observation_first_refresh_failure(
     assert not hass.states.async_entity_ids("weather")
 
 
-async def test_observation_auth_starts_reauth(
+async def test_observation_auth_does_not_request_retired_credentials(
     hass, station_setup, mock_observation_client
 ):
-    """A later legacy HTTP auth failure triggers the same entry's reauth flow."""
+    """Legacy access failure cannot trigger a misleading NWP-token dialog."""
     mock_observation_client.async_get_current_conditions.side_effect = TMDAuthError
     await station_setup.runtime_data.observation_coordinator.async_refresh()
     await hass.async_block_till_done()
     flows = hass.config_entries.flow.async_progress_by_handler("tmd_weather")
-    assert len(flows) == 1
-    assert flows[0]["step_id"] == "reauth_confirm"
+    assert not flows
+    assert not station_setup.runtime_data.observation_coordinator.last_update_success
 
 
 @pytest.mark.parametrize(
-    "credentials,error",
+    "exception,error",
     [
-        ({"use_observations": True}, "observation_credentials_required"),
-        (
-            {
-                "use_observations": True,
-                "observation_uid": "test-uid",
-                "observation_key": "bad-key",
-            },
-            "invalid_auth",
-        ),
+        (TMDAuthError, "invalid_auth"),
+        (TMDConnectionError, "cannot_connect"),
     ],
 )
 async def test_failed_reconfigure_keeps_entry(
-    hass, setup_entry, mock_observation_client, credentials, error
+    hass, setup_entry, mock_client, exception, error
 ):
     """An invalid source change keeps the working config and runtime intact."""
-    mock_observation_client.async_get_current_conditions.side_effect = TMDAuthError
+    original = dict(setup_entry.data)
+    mock_client.async_get_hourly_forecast.side_effect = exception
     result = await hass.config_entries.flow.async_init(
         "tmd_weather",
         context={"source": "reconfigure", "entry_id": setup_entry.entry_id},
     )
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], credentials
+        result["flow_id"], {"current_source": "nwp_model"}
     )
     assert result["errors"] == {"base": error}
-    assert "observation_uid" not in setup_entry.data
+    assert dict(setup_entry.data) == original
     assert setup_entry.runtime_data.observation_coordinator is None

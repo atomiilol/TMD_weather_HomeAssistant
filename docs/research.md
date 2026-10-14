@@ -1,5 +1,10 @@
 # Architecture and verification record
 
+These notes document the earlier NWP/Weather3Hours investigation. Current stable
+AWS setup and behavior are documented in [AWS stations](aws-stations.md).
+Observation UID/UKEY fields have been retired from configuration dialogs.
+
+
 Research dates: 2026-10-11–12. TMD documentation and public observation examples are
 now accessible; authenticated NWP forecast payloads remain unverified.
 

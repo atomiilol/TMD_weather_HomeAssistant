@@ -308,12 +308,48 @@ async def test_switch_back_to_existing_source(hass, aws_setup, mock_aws_client):
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": "reconfigure", "entry_id": aws_setup.entry_id},
-        data={"current_source": "legacy", "use_observations": False},
+        data={"current_source": "nwp_model"},
     )
     await hass.async_block_till_done()
     assert result["type"] == FlowResultType.ABORT
     assert aws_setup.runtime_data.aws_coordinator is None
     assert TMDWeatherEntity(aws_setup).native_temperature == 30.5
+
+
+async def test_saved_legacy_entry_switches_to_aws_without_keys(
+    hass, station_setup, mock_aws_client, entity_registry
+):
+    """Explicit AWS selection retires saved keys and preserves location/entity IDs."""
+    before = dict(station_setup.data)
+    weather_id = hass.states.async_entity_ids("weather")[0]
+    registry_id = entity_registry.async_get(weather_id).id
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": "reconfigure", "entry_id": station_setup.entry_id},
+        data={"current_source": "aws_station"},
+    )
+    # Opening/changing the flow alone cannot remove a saved credential.
+    assert dict(station_setup.data) == before
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"aws_selection_mode": "manual"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"region": "Northern"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"aws_station_id": "2"}
+    )
+    await hass.async_block_till_done()
+    assert result["reason"] == "reconfigure_successful"
+    assert "observation_uid" not in station_setup.data
+    assert "observation_key" not in station_setup.data
+    assert station_setup.data["access_token"] == before["access_token"]
+    assert (station_setup.data["latitude"], station_setup.data["longitude"]) == (
+        before["latitude"],
+        before["longitude"],
+    )
+    assert station_setup.runtime_data.aws_coordinator.aws_id == 2
+    assert entity_registry.async_get(weather_id).id == registry_id
 
 
 async def test_reconfigure_automatic_prefills_current_ha_location(
