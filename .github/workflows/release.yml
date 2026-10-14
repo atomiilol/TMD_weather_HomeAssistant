@@ -16,12 +16,15 @@ permissions:
 jobs:
   version:
     runs-on: ubuntu-latest
+    outputs:
+      prerelease: ${{ steps.metadata.outputs.prerelease }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.14'
       - name: Require tag, manifest, project and changelog agreement
+        id: metadata
         env:
           RELEASE_TAG: ${{ github.ref_name }}
           RELEASE_REF_TYPE: ${{ github.ref_type }}
@@ -30,7 +33,7 @@ jobs:
             echo 'Select a version tag when running this workflow manually.'
             exit 1
           fi
-          python script/check_release.py --tag "$RELEASE_TAG"
+          python script/check_release.py --tag "$RELEASE_TAG" --github-output "$GITHUB_OUTPUT"
 
   tests:
     needs: version
@@ -65,16 +68,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
         run: |
           # A retry must not overwrite an already published release.
           if gh release view "$RELEASE_TAG" --json isDraft,isPrerelease \
-            --jq '.isDraft or .isPrerelease' > "$RUNNER_TEMP/tmd-release-status"; then
-            if [ "$(cat "$RUNNER_TEMP/tmd-release-status")" != false ]; then
-              echo 'An existing draft or prerelease must be reviewed before publishing.'
+            --jq '"\(.isDraft) \(.isPrerelease)"' > "$RUNNER_TEMP/tmd-release-status"; then
+            if [ "$(cat "$RUNNER_TEMP/tmd-release-status")" != "false $PRERELEASE" ]; then
+              echo 'Existing release status differs from the validated version.'
               exit 1
             fi
             echo "Release $RELEASE_TAG already exists."
             exit 0
           fi
-          gh release create "$RELEASE_TAG" --verify-tag --latest \
-            --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/tmd-release-notes.md"
+          if [ "$PRERELEASE" = true ]; then
+            gh release create "$RELEASE_TAG" --verify-tag --prerelease --latest=false \
+              --title "$RELEASE_TAG (AWS stations beta)" --notes-file "$RUNNER_TEMP/tmd-release-notes.md"
+          else
+            gh release create "$RELEASE_TAG" --verify-tag --latest \
+              --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/tmd-release-notes.md"
+          fi

@@ -1,0 +1,2045 @@
+[
+  {
+    "number": "0001",
+    "value": 1,
+    "name": "Chiang Mai Airport Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 18.77111053466797,
+    "long": 98.96916961669922
+  },
+  {
+    "number": "0002",
+    "value": 2,
+    "name": "Tak Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 16.8799991607666,
+    "long": 99.13999938964844
+  },
+  {
+    "number": "0003",
+    "value": 3,
+    "name": "Phitanulok Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 16.796388626098633,
+    "long": 100.27555847167969
+  },
+  {
+    "number": "0004",
+    "value": 4,
+    "name": "Kampaeng Phet Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 16.48638916015625,
+    "long": 99.52666473388672
+  },
+  {
+    "number": "0005",
+    "value": 5,
+    "name": "Phichit Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Northern",
+    "lat": 16.338611602783203,
+    "long": 100.36666870117188
+  },
+  {
+    "number": "0007",
+    "value": 7,
+    "name": "Maesot Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 16.700000762939453,
+    "long": 98.54194641113281
+  },
+  {
+    "number": "0008",
+    "value": 8,
+    "name": "Umphang Hydrometeorlogical Station",
+    "type": "Hydrometeorological Station",
+    "region": "Northern",
+    "lat": 16.025278091430664,
+    "long": 98.85972595214844
+  },
+  {
+    "number": "0009",
+    "value": 9,
+    "name": "Lamphun Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 18.566944122314453,
+    "long": 99.038330078125
+  },
+  {
+    "number": "0010",
+    "value": 10,
+    "name": "Doi Angkhang Weather Observing",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 19.9325008392334,
+    "long": 99.04528045654297
+  },
+  {
+    "number": "0011",
+    "value": 11,
+    "name": "Mae Hong Son Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 19.29972267150879,
+    "long": 97.9727783203125
+  },
+  {
+    "number": "0012",
+    "value": 12,
+    "name": "Mae Sariang Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 18.176111221313477,
+    "long": 97.93055725097656
+  },
+  {
+    "number": "0014",
+    "value": 14,
+    "name": "Phayao Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 19.192777633666992,
+    "long": 99.88361358642578
+  },
+  {
+    "number": "0015",
+    "value": 15,
+    "name": "Si Samrong Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Northern",
+    "lat": 17.161388397216797,
+    "long": 99.86166381835938
+  },
+  {
+    "number": "0016",
+    "value": 16,
+    "name": "Hang Chat Agrometeorology Station",
+    "type": "Agrometeorological Station",
+    "region": "Northern",
+    "lat": 18.32527732849121,
+    "long": 99.3013916015625
+  },
+  {
+    "number": "0017",
+    "value": 17,
+    "name": "Doi Musir Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Northern",
+    "lat": 16.752222061157227,
+    "long": 98.9352798461914
+  },
+  {
+    "number": "0018",
+    "value": 18,
+    "name": "Uttaradit Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 17.62444496154785,
+    "long": 100.09666442871094
+  },
+  {
+    "number": "0019",
+    "value": 19,
+    "name": "Thoen Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 17.636388778686523,
+    "long": 99.24472045898438
+  },
+  {
+    "number": "0020",
+    "value": 20,
+    "name": "Lampang Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 18.27805519104004,
+    "long": 99.50638580322266
+  },
+  {
+    "number": "0021",
+    "value": 21,
+    "name": "Lob Buri Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Central",
+    "lat": 14.800000190734863,
+    "long": 100.6280517578125
+  },
+  {
+    "number": "0022",
+    "value": 22,
+    "name": "Bua Chum Hydrometeorlogical Station",
+    "type": "Hydrometeorological Station",
+    "region": "Central",
+    "lat": 15.266388893127441,
+    "long": 101.18694305419922
+  },
+  {
+    "number": "0023",
+    "value": 23,
+    "name": "Nakon Sawan Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Central",
+    "lat": 15.671944618225098,
+    "long": 100.13249969482422
+  },
+  {
+    "number": "0024",
+    "value": 24,
+    "name": "Tak Fa Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Central",
+    "lat": 15.349444389343262,
+    "long": 100.53028106689453
+  },
+  {
+    "number": "0025",
+    "value": 25,
+    "name": "Chai Nat Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Central",
+    "lat": 15.158055305480957,
+    "long": 100.19139099121094
+  },
+  {
+    "number": "0026",
+    "value": 26,
+    "name": "Ayutthaya Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Central",
+    "lat": 14.534444808959961,
+    "long": 100.72444152832031
+  },
+  {
+    "number": "0028",
+    "value": 28,
+    "name": "Kampaeng Saen Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Central",
+    "lat": 14.011666297912598,
+    "long": 99.96971893310547
+  },
+  {
+    "number": "0029",
+    "value": 29,
+    "name": "Prachuap Khiri Khan Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 11.835277557373047,
+    "long": 99.80972290039062
+  },
+  {
+    "number": "0030",
+    "value": 30,
+    "name": "Thong Pha Phum Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Central",
+    "lat": 14.744444847106934,
+    "long": 98.633056640625
+  },
+  {
+    "number": "0031",
+    "value": 31,
+    "name": "Kanchanaburi Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Central",
+    "lat": 14.022500038146973,
+    "long": 99.5361099243164
+  },
+  {
+    "number": "0032",
+    "value": 32,
+    "name": "Ratcha Buri Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Central",
+    "lat": 13.489444732666016,
+    "long": 99.79222106933594
+  },
+  {
+    "number": "0033",
+    "value": 33,
+    "name": "Pratumtani Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Central",
+    "lat": 14.116110801696777,
+    "long": 100.62055206298828
+  },
+  {
+    "number": "0034",
+    "value": 34,
+    "name": "Chachoengsao Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Eastern",
+    "lat": 13.57027816772461,
+    "long": 101.45194244384766
+  },
+  {
+    "number": "0035",
+    "value": 35,
+    "name": "Chon Buri Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Eastern",
+    "lat": 13.355555534362793,
+    "long": 100.98194122314453
+  },
+  {
+    "number": "0036",
+    "value": 36,
+    "name": "Ko Sichang Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Eastern",
+    "lat": 13.1627779006958,
+    "long": 100.80278015136719
+  },
+  {
+    "number": "0037",
+    "value": 37,
+    "name": "Bangna Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Central",
+    "lat": 13.667499542236328,
+    "long": 100.60527801513672
+  },
+  {
+    "number": "0038",
+    "value": 38,
+    "name": "Aranyaprathet Hydrometeorlogical Station",
+    "type": "Hydrometeorological Station",
+    "region": "Eastern",
+    "lat": 13.688888549804688,
+    "long": 102.50416564941406
+  },
+  {
+    "number": "0039",
+    "value": 39,
+    "name": "Khlong Yai Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Eastern",
+    "lat": 11.779999732971191,
+    "long": 102.8780517578125
+  },
+  {
+    "number": "0040",
+    "value": 40,
+    "name": "Chanthaburi Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Eastern",
+    "lat": 12.609999656677246,
+    "long": 102.10388946533203
+  },
+  {
+    "number": "0041",
+    "value": 41,
+    "name": "Phlew Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Eastern",
+    "lat": 12.51027774810791,
+    "long": 102.16944122314453
+  },
+  {
+    "number": "0043",
+    "value": 43,
+    "name": "Huai Pong Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Eastern",
+    "lat": 12.734999656677246,
+    "long": 101.13500213623047
+  },
+  {
+    "number": "0044",
+    "value": 44,
+    "name": "Phatthaya Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Eastern",
+    "lat": 12.923055648803711,
+    "long": 100.86555480957031
+  },
+  {
+    "number": "0045",
+    "value": 45,
+    "name": "Khao Kheow Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Central",
+    "lat": 14.362222671508789,
+    "long": 101.39277648925781
+  },
+  {
+    "number": "0048",
+    "value": 48,
+    "name": "Nakhonsithammarat Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 8.546111106872559,
+    "long": 99.93944549560547
+  },
+  {
+    "number": "0050",
+    "value": 50,
+    "name": "Phatthalung Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Southern Eastern",
+    "lat": 7.613611221313477,
+    "long": 100.11750030517578
+  },
+  {
+    "number": "0051",
+    "value": 51,
+    "name": "Hat Yai (Airport) Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 6.936666488647461,
+    "long": 100.39360809326172
+  },
+  {
+    "number": "0052",
+    "value": 52,
+    "name": "Songkhla Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 7.184166431427002,
+    "long": 100.60416412353516
+  },
+  {
+    "number": "0053",
+    "value": 53,
+    "name": "Kho Hong Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Southern Eastern",
+    "lat": 7.018610954284668,
+    "long": 100.4977798461914
+  },
+  {
+    "number": "0054",
+    "value": 54,
+    "name": "Ranong Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Western",
+    "lat": 9.95472240447998,
+    "long": 98.63361358642578
+  },
+  {
+    "number": "0055",
+    "value": 55,
+    "name": "Sawi Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Southern Eastern",
+    "lat": 10.332221984863281,
+    "long": 99.09249877929688
+  },
+  {
+    "number": "0056",
+    "value": 56,
+    "name": "Pakchong Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "North Eastern",
+    "lat": 14.643610954284668,
+    "long": 101.31805419921875
+  },
+  {
+    "number": "0057",
+    "value": 57,
+    "name": "Chok Chai Hydrometeorlogical Station",
+    "type": "Hydrometeorological Station",
+    "region": "North Eastern",
+    "lat": 14.739444732666016,
+    "long": 102.16471862792969
+  },
+  {
+    "number": "0058",
+    "value": 58,
+    "name": "Nang Rong Hydrometeorlogical Station",
+    "type": "Hydrometeorological Station",
+    "region": "North Eastern",
+    "lat": 14.632499694824219,
+    "long": 102.71778106689453
+  },
+  {
+    "number": "0059",
+    "value": 59,
+    "name": "Surin Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 14.876111030578613,
+    "long": 103.49610900878906
+  },
+  {
+    "number": "0060",
+    "value": 60,
+    "name": "Thaphra Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "North Eastern",
+    "lat": 16.337499618530273,
+    "long": 102.8227767944336
+  },
+  {
+    "number": "0061",
+    "value": 61,
+    "name": "Khon Kaen Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 16.462223052978516,
+    "long": 102.78555297851562
+  },
+  {
+    "number": "0062",
+    "value": 62,
+    "name": "Nakhon Ratchasima Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 14.970000267028809,
+    "long": 102.08194732666016
+  },
+  {
+    "number": "0063",
+    "value": 63,
+    "name": "Satun Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Western",
+    "lat": 6.653611183166504,
+    "long": 100.08305358886719
+  },
+  {
+    "number": "0064",
+    "value": 64,
+    "name": "Trang Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Western",
+    "lat": 7.5122222900390625,
+    "long": 99.62083435058594
+  },
+  {
+    "number": "0065",
+    "value": 65,
+    "name": "Krabi Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Western",
+    "lat": 8.10361099243164,
+    "long": 98.97528076171875
+  },
+  {
+    "number": "0067",
+    "value": 67,
+    "name": "Phuket Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Western",
+    "lat": 7.884444236755371,
+    "long": 98.39221954345703
+  },
+  {
+    "number": "0068",
+    "value": 68,
+    "name": "Phuket (Airport) Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Western",
+    "lat": 8.10444450378418,
+    "long": 98.30777740478516
+  },
+  {
+    "number": "0069",
+    "value": 69,
+    "name": "Chumphon Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 10.498888969421387,
+    "long": 99.1883316040039
+  },
+  {
+    "number": "0070",
+    "value": 70,
+    "name": "Chaiyaphum Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 15.807222366333008,
+    "long": 102.024169921875
+  },
+  {
+    "number": "0071",
+    "value": 71,
+    "name": "Roi Et Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 16.053333282470703,
+    "long": 103.66083526611328
+  },
+  {
+    "number": "0072",
+    "value": 72,
+    "name": "Roi Et Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "North Eastern",
+    "lat": 16.074722290039062,
+    "long": 103.60416412353516
+  },
+  {
+    "number": "0073",
+    "value": 73,
+    "name": "Mukdahan Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 16.54305648803711,
+    "long": 104.72528076171875
+  },
+  {
+    "number": "0074",
+    "value": 74,
+    "name": "Ubon Ratchathani Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "North Eastern",
+    "lat": 15.240833282470703,
+    "long": 105.01944732666016
+  },
+  {
+    "number": "0075",
+    "value": 75,
+    "name": "Ubon Ratchathani Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 15.245555877685547,
+    "long": 104.87139129638672
+  },
+  {
+    "number": "0076",
+    "value": 76,
+    "name": "Sri Sa Ket Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "North Eastern",
+    "lat": 15.0872220993042,
+    "long": 104.32666778564453
+  },
+  {
+    "number": "0077",
+    "value": 77,
+    "name": "Loie Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "North Eastern",
+    "lat": 17.40944480895996,
+    "long": 101.72972106933594
+  },
+  {
+    "number": "0078",
+    "value": 78,
+    "name": "Loie Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 17.452777862548828,
+    "long": 101.73027801513672
+  },
+  {
+    "number": "0079",
+    "value": 79,
+    "name": "Nong Bua Lamphu Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 17.22361183166504,
+    "long": 102.429443359375
+  },
+  {
+    "number": "0080",
+    "value": 80,
+    "name": "Udon Thani Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 17.378610610961914,
+    "long": 102.80555725097656
+  },
+  {
+    "number": "0081",
+    "value": 81,
+    "name": "Nong Khai Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 17.864999771118164,
+    "long": 102.7469482421875
+  },
+  {
+    "number": "0082",
+    "value": 82,
+    "name": "Sakon Nakhon Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 17.156389236450195,
+    "long": 104.133056640625
+  },
+  {
+    "number": "0083",
+    "value": 83,
+    "name": "Sakon Nakhon Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "North Eastern",
+    "lat": 17.126388549804688,
+    "long": 104.05694580078125
+  },
+  {
+    "number": "0085",
+    "value": 85,
+    "name": "Pattani Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 6.789444446563721,
+    "long": 101.14694213867188
+  },
+  {
+    "number": "0086",
+    "value": 86,
+    "name": "Yala Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Southern Eastern",
+    "lat": 6.515277862548828,
+    "long": 101.27388763427734
+  },
+  {
+    "number": "0087",
+    "value": 87,
+    "name": "Narathiwat Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 6.426666736602783,
+    "long": 101.82499694824219
+  },
+  {
+    "number": "0088",
+    "value": 88,
+    "name": "Kanjanadit Agrometeorology Station",
+    "type": "Agrometeorological Station",
+    "region": "Southern Eastern",
+    "lat": 9.144444465637207,
+    "long": 99.633056640625
+  },
+  {
+    "number": "0089",
+    "value": 89,
+    "name": "Bangjak_2 Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Southern Eastern",
+    "lat": 8.177778244018555,
+    "long": 100.17166900634766
+  },
+  {
+    "number": "0090",
+    "value": 90,
+    "name": "Chawang Hydrometeorlogical Station",
+    "type": "Hydrometeorological Station",
+    "region": "Southern Eastern",
+    "lat": 8.426111221313477,
+    "long": 99.50333404541016
+  },
+  {
+    "number": "0091",
+    "value": 91,
+    "name": "Phrasang Hydrometeorlogical Station",
+    "type": "Hydrometeorological Station",
+    "region": "Southern Eastern",
+    "lat": 8.571944236755371,
+    "long": 99.25499725341797
+  },
+  {
+    "number": "0092",
+    "value": 92,
+    "name": "Surat Thani (Kho Tao) Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Southern Eastern",
+    "lat": 10.07277774810791,
+    "long": 99.82833099365234
+  },
+  {
+    "number": "0095",
+    "value": 95,
+    "name": "Nan Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 18.766666412353516,
+    "long": 100.76333618164062
+  },
+  {
+    "number": "0096",
+    "value": 96,
+    "name": "Thung Chang Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 19.408056259155273,
+    "long": 100.88249969482422
+  },
+  {
+    "number": "0097",
+    "value": 97,
+    "name": "Phetchabun Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 16.434722900390625,
+    "long": 101.15166473388672
+  },
+  {
+    "number": "0098",
+    "value": 98,
+    "name": "Wichian Buri Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 15.656944274902344,
+    "long": 101.10527801513672
+  },
+  {
+    "number": "0100",
+    "value": 100,
+    "name": "Amnat Charoen Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 15.903888702392578,
+    "long": 104.61805725097656
+  },
+  {
+    "number": "0101",
+    "value": 101,
+    "name": "Bueng Kan Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 18.413610458374023,
+    "long": 103.51667022705078
+  },
+  {
+    "number": "0102",
+    "value": 102,
+    "name": "Songkhla (Sadao) Weather Radar Station",
+    "type": "Weather Radar Station",
+    "region": "Southern Eastern",
+    "lat": 6.789166450500488,
+    "long": 100.40972137451172
+  },
+  {
+    "number": "0103",
+    "value": 103,
+    "name": "Sathing Phra Weather Radar Station",
+    "type": "Weather Radar Station",
+    "region": "Southern Eastern",
+    "lat": 7.451111316680908,
+    "long": 100.45249938964844
+  },
+  {
+    "number": "0104",
+    "value": 104,
+    "name": "Chaloem Phra Kiat Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Central",
+    "lat": 13.72611141204834,
+    "long": 100.55972290039062
+  },
+  {
+    "number": "0105",
+    "value": 105,
+    "name": "Samut Songkhram Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Central",
+    "lat": 13.407221794128418,
+    "long": 100.03166961669922
+  },
+  {
+    "number": "0106",
+    "value": 106,
+    "name": "Samut Prakan Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Central",
+    "lat": 13.51805591583252,
+    "long": 100.75833129882812
+  },
+  {
+    "number": "0107",
+    "value": 107,
+    "name": "Uthaithani Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Central",
+    "lat": 15.35361099243164,
+    "long": 100.00971984863281
+  },
+  {
+    "number": "0108",
+    "value": 108,
+    "name": "Suphanburi Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Central",
+    "lat": 14.474721908569336,
+    "long": 100.09083557128906
+  },
+  {
+    "number": "0109",
+    "value": 109,
+    "name": "Yasothon Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 15.795000076293945,
+    "long": 104.21416473388672
+  },
+  {
+    "number": "1001",
+    "value": 1001,
+    "name": "Bhumibol Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 17.24388885498047,
+    "long": 99.00250244140625
+  },
+  {
+    "number": "1002",
+    "value": 1002,
+    "name": "Phitsanulok Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 16.775278091430664,
+    "long": 100.21666717529297
+  },
+  {
+    "number": "1003",
+    "value": 1003,
+    "name": "Nakhon Nayok Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Eastern",
+    "lat": 14.271944046020508,
+    "long": 101.19416809082031
+  },
+  {
+    "number": "1004",
+    "value": 1004,
+    "name": "Chiang Rai Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 19.961389541625977,
+    "long": 99.88111114501953
+  },
+  {
+    "number": "1005",
+    "value": 1005,
+    "name": "Chiang Rai Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Northern",
+    "lat": 19.859167098999023,
+    "long": 99.774169921875
+  },
+  {
+    "number": "1006",
+    "value": 1006,
+    "name": "Mae Sai Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 20.428611755371094,
+    "long": 99.88333129882812
+  },
+  {
+    "number": "1007",
+    "value": 1007,
+    "name": "Mae Suai Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 19.66083335876465,
+    "long": 99.5344467163086
+  },
+  {
+    "number": "1008",
+    "value": 1008,
+    "name": "Wiang Pa Pao Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 19.34694480895996,
+    "long": 99.50666809082031
+  },
+  {
+    "number": "1009",
+    "value": 1009,
+    "name": "Huai Chang Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 20.22888946533203,
+    "long": 100.37333679199219
+  },
+  {
+    "number": "1010",
+    "value": 1010,
+    "name": "Phaya Mengrai Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 19.849166870117188,
+    "long": 100.15361022949219
+  },
+  {
+    "number": "1011",
+    "value": 1011,
+    "name": "Nan (Tha Wang Pha) Weather Observing Stantion",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 19.123056411743164,
+    "long": 100.81305694580078
+  },
+  {
+    "number": "1012",
+    "value": 1012,
+    "name": "Nan Agrometeorology Station",
+    "type": "Agrometeorological Station",
+    "region": "Northern",
+    "lat": 18.863611221313477,
+    "long": 100.74166870117188
+  },
+  {
+    "number": "1013",
+    "value": 1013,
+    "name": "Nan (Nam Gon) Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 19.28333282470703,
+    "long": 100.91139221191406
+  },
+  {
+    "number": "1014",
+    "value": 1014,
+    "name": "Phrae Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 18.128334045410156,
+    "long": 100.16222381591797
+  },
+  {
+    "number": "1015",
+    "value": 1015,
+    "name": "Helipad At Doi Tung Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 20.27916717529297,
+    "long": 99.80166625976562
+  },
+  {
+    "number": "1016",
+    "value": 1016,
+    "name": "Sung Men Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 18.051944732666016,
+    "long": 100.11138916015625
+  },
+  {
+    "number": "1017",
+    "value": 1017,
+    "name": "Mae Puem Reservoir Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 19.36027717590332,
+    "long": 99.8691635131836
+  },
+  {
+    "number": "1018",
+    "value": 1018,
+    "name": "Doi Suthep Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 18.814167022705078,
+    "long": 98.94499969482422
+  },
+  {
+    "number": "1019",
+    "value": 1019,
+    "name": "Chiang Dao Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 19.36138916015625,
+    "long": 98.96527862548828
+  },
+  {
+    "number": "1020",
+    "value": 1020,
+    "name": "San Sai Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 18.84861183166504,
+    "long": 99.04528045654297
+  },
+  {
+    "number": "1021",
+    "value": 1021,
+    "name": "Phrao Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 19.365833282470703,
+    "long": 99.20222473144531
+  },
+  {
+    "number": "1022",
+    "value": 1022,
+    "name": "Omkoi Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 17.7983341217041,
+    "long": 98.43277740478516
+  },
+  {
+    "number": "1023",
+    "value": 1023,
+    "name": "Mae Chaem Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 18.496944427490234,
+    "long": 98.37305450439453
+  },
+  {
+    "number": "1024",
+    "value": 1024,
+    "name": "Mae Chan Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 20.126667022705078,
+    "long": 99.8133316040039
+  },
+  {
+    "number": "1025",
+    "value": 1025,
+    "name": "(SAO) Prasong Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 9.521944046020508,
+    "long": 99.13722229003906
+  },
+  {
+    "number": "1026",
+    "value": 1026,
+    "name": "Hot Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 18.192222595214844,
+    "long": 98.61027526855469
+  },
+  {
+    "number": "1027",
+    "value": 1027,
+    "name": "Kiew Lom Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 18.522499084472656,
+    "long": 99.6322250366211
+  },
+  {
+    "number": "1028",
+    "value": 1028,
+    "name": "Sop Prap Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 17.87527847290039,
+    "long": 99.34610748291016
+  },
+  {
+    "number": "1029",
+    "value": 1029,
+    "name": "Soem Ngam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 18.066110610961914,
+    "long": 99.24639129638672
+  },
+  {
+    "number": "1030",
+    "value": 1030,
+    "name": "Vajiralongkorn Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Central",
+    "lat": 14.784722328186035,
+    "long": 98.58944702148438
+  },
+  {
+    "number": "1031",
+    "value": 1031,
+    "name": "Tha Song Yang ( Tak ) Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 17.227500915527344,
+    "long": 98.22528076171875
+  },
+  {
+    "number": "1032",
+    "value": 1032,
+    "name": "Khwae Noi Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 17.189167022705078,
+    "long": 100.41638946533203
+  },
+  {
+    "number": "1033",
+    "value": 1033,
+    "name": "Nakhon Thai Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 17.107778549194336,
+    "long": 100.84889221191406
+  },
+  {
+    "number": "1034",
+    "value": 1034,
+    "name": "Sirikit Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 17.74416732788086,
+    "long": 100.55388641357422
+  },
+  {
+    "number": "1035",
+    "value": 1035,
+    "name": "Ban Khok Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 18.15972137451172,
+    "long": 101.06861114501953
+  },
+  {
+    "number": "1036",
+    "value": 1036,
+    "name": "Ayutthaya Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Central",
+    "lat": 14.351943969726562,
+    "long": 100.57694244384766
+  },
+  {
+    "number": "1037",
+    "value": 1037,
+    "name": "Sukhothai Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 17.106945037841797,
+    "long": 99.80027770996094
+  },
+  {
+    "number": "1038",
+    "value": 1038,
+    "name": "Huai Tha Phrae Reservoir Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 17.481945037841797,
+    "long": 99.6308364868164
+  },
+  {
+    "number": "1039",
+    "value": 1039,
+    "name": "Phetchabun (Lom Sak) Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Northern",
+    "lat": 16.773889541625977,
+    "long": 101.24500274658203
+  },
+  {
+    "number": "1040",
+    "value": 1040,
+    "name": "Khao Kho Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 16.573055267333984,
+    "long": 100.96861267089844
+  },
+  {
+    "number": "1041",
+    "value": 1041,
+    "name": "Bueng Sam Phan Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Northern",
+    "lat": 15.778055191040039,
+    "long": 101.02083587646484
+  },
+  {
+    "number": "1042",
+    "value": 1042,
+    "name": "Phu Kradueng Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "North Eastern",
+    "lat": 16.88361167907715,
+    "long": 101.88444519042969
+  },
+  {
+    "number": "1043",
+    "value": 1043,
+    "name": "Nakhon Phanom Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "North Eastern",
+    "lat": 17.275554656982422,
+    "long": 104.7699966430664
+  },
+  {
+    "number": "1044",
+    "value": 1044,
+    "name": "Huai Khaen Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "North Eastern",
+    "lat": 17.147499084472656,
+    "long": 104.61222076416016
+  },
+  {
+    "number": "1045",
+    "value": 1045,
+    "name": "Huai Plew Nguak Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "North Eastern",
+    "lat": 18.06333351135254,
+    "long": 103.14555358886719
+  },
+  {
+    "number": "1046",
+    "value": 1046,
+    "name": "Sangkhom (Nong Khai) Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "North Eastern",
+    "lat": 18.174999237060547,
+    "long": 102.16777801513672
+  },
+  {
+    "number": "1047",
+    "value": 1047,
+    "name": "Bueng Kan (Dong Bang) Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "North Eastern",
+    "lat": 18.045000076293945,
+    "long": 104.13111114501953
+  },
+  {
+    "number": "1048",
+    "value": 1048,
+    "name": "Nakhon Phanom Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 17.411945343017578,
+    "long": 104.77833557128906
+  },
+  {
+    "number": "1049",
+    "value": 1049,
+    "name": "Huai Nam Man Reservoir Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "North Eastern",
+    "lat": 17.509166717529297,
+    "long": 101.6241683959961
+  },
+  {
+    "number": "1050",
+    "value": 1050,
+    "name": "Nam Pung Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "North Eastern",
+    "lat": 16.974166870117188,
+    "long": 103.98139190673828
+  },
+  {
+    "number": "1051",
+    "value": 1051,
+    "name": "Pak Mun Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "North Eastern",
+    "lat": 15.279999732971191,
+    "long": 105.47027587890625
+  },
+  {
+    "number": "1052",
+    "value": 1052,
+    "name": "Maha Sarakham Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 16.246665954589844,
+    "long": 103.06583404541016
+  },
+  {
+    "number": "1053",
+    "value": 1053,
+    "name": "Kalasin (Kamala Sai) Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 16.331666946411133,
+    "long": 103.58721923828125
+  },
+  {
+    "number": "1054",
+    "value": 1054,
+    "name": "Tha Tum Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 15.317777633666992,
+    "long": 103.6763916015625
+  },
+  {
+    "number": "1055",
+    "value": 1055,
+    "name": "Surin Agrometeorological Station",
+    "type": "Agrometeorological Station",
+    "region": "North Eastern",
+    "lat": 14.892499923706055,
+    "long": 103.4486083984375
+  },
+  {
+    "number": "1056",
+    "value": 1056,
+    "name": "Am Puen Reservoir Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "North Eastern",
+    "lat": 14.768610954284668,
+    "long": 103.55278015136719
+  },
+  {
+    "number": "1057",
+    "value": 1057,
+    "name": "Buriram Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "North Eastern",
+    "lat": 15.227499961853027,
+    "long": 103.2441635131836
+  },
+  {
+    "number": "1058",
+    "value": 1058,
+    "name": "Lumprapeong Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "North Eastern",
+    "lat": 14.592499732971191,
+    "long": 101.84333038330078
+  },
+  {
+    "number": "1059",
+    "value": 1059,
+    "name": "Cho Raka Reservoir Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "North Eastern",
+    "lat": 15.901666641235352,
+    "long": 101.98638916015625
+  },
+  {
+    "number": "1060",
+    "value": 1060,
+    "name": "Srinakarin Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Central",
+    "lat": 14.394444465637207,
+    "long": 99.12110900878906
+  },
+  {
+    "number": "1061",
+    "value": 1061,
+    "name": "Nong Lu Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Central",
+    "lat": 15.19527816772461,
+    "long": 98.46111297607422
+  },
+  {
+    "number": "1062",
+    "value": 1062,
+    "name": "Nong Prue Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Central",
+    "lat": 14.662221908569336,
+    "long": 99.44666290283203
+  },
+  {
+    "number": "1063",
+    "value": 1063,
+    "name": "Suan Phueng Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Central",
+    "lat": 13.545555114746094,
+    "long": 99.31722259521484
+  },
+  {
+    "number": "1064",
+    "value": 1064,
+    "name": "Thap Salao Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Central",
+    "lat": 15.558333396911621,
+    "long": 99.44499969482422
+  },
+  {
+    "number": "1065",
+    "value": 1065,
+    "name": "Huaiyang Reservoir Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Eastern",
+    "lat": 14.011944770812988,
+    "long": 102.64250183105469
+  },
+  {
+    "number": "1066",
+    "value": 1066,
+    "name": "Sa Kaeo Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Eastern",
+    "lat": 13.79194450378418,
+    "long": 102.03221893310547
+  },
+  {
+    "number": "1067",
+    "value": 1067,
+    "name": "Khirithan Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Eastern",
+    "lat": 12.743888854980469,
+    "long": 102.35250091552734
+  },
+  {
+    "number": "1068",
+    "value": 1068,
+    "name": "Prachin Buri Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Eastern",
+    "lat": 14.050833702087402,
+    "long": 101.3691635131836
+  },
+  {
+    "number": "1069",
+    "value": 1069,
+    "name": "Kabin Buri Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Eastern",
+    "lat": 13.985833168029785,
+    "long": 101.7044448852539
+  },
+  {
+    "number": "1070",
+    "value": 1070,
+    "name": "Khun Dan Prakarnchon Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Eastern",
+    "lat": 14.3149995803833,
+    "long": 101.32083129882812
+  },
+  {
+    "number": "1071",
+    "value": 1071,
+    "name": "Phetchaburi Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 12.999444007873535,
+    "long": 100.06055450439453
+  },
+  {
+    "number": "1072",
+    "value": 1072,
+    "name": "Kaeng Krachan Reservoir Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 12.91333293914795,
+    "long": 99.62666320800781
+  },
+  {
+    "number": "1073",
+    "value": 1073,
+    "name": "Hua Hin Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 12.577777862548828,
+    "long": 99.95388793945312
+  },
+  {
+    "number": "1074",
+    "value": 1074,
+    "name": "Nong Plub Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 12.588889122009277,
+    "long": 99.73444366455078
+  },
+  {
+    "number": "1075",
+    "value": 1075,
+    "name": "Pran Buri Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 12.47249984741211,
+    "long": 99.79277801513672
+  },
+  {
+    "number": "1076",
+    "value": 1076,
+    "name": "Khlong Bueng Reservoir Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 11.938333511352539,
+    "long": 99.6986083984375
+  },
+  {
+    "number": "1077",
+    "value": 1077,
+    "name": "Thap Sakae Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 11.533055305480957,
+    "long": 99.62361145019531
+  },
+  {
+    "number": "1078",
+    "value": 1078,
+    "name": "Surat Thani Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 9.134166717529297,
+    "long": 99.15194702148438
+  },
+  {
+    "number": "1079",
+    "value": 1079,
+    "name": "Ratchaprapha Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 8.957500457763672,
+    "long": 98.79499816894531
+  },
+  {
+    "number": "1080",
+    "value": 1080,
+    "name": "Tha Thong Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 9.166666984558105,
+    "long": 99.62860870361328
+  },
+  {
+    "number": "1081",
+    "value": 1081,
+    "name": "Klong Tha Din Dang Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 8.595277786254883,
+    "long": 99.60194396972656
+  },
+  {
+    "number": "1082",
+    "value": 1082,
+    "name": "Rayong Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Eastern",
+    "lat": 12.633889198303223,
+    "long": 101.33999633789062
+  },
+  {
+    "number": "1083",
+    "value": 1083,
+    "name": "Phangnga Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Western",
+    "lat": 8.683333396911621,
+    "long": 98.2522201538086
+  },
+  {
+    "number": "1084",
+    "value": 1084,
+    "name": "Tha Ngio Dem Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Western",
+    "lat": 7.836111068725586,
+    "long": 99.69110870361328
+  },
+  {
+    "number": "1085",
+    "value": 1085,
+    "name": "Bang Ward Dam Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Western",
+    "lat": 7.891944408416748,
+    "long": 98.33472442626953
+  },
+  {
+    "number": "1086",
+    "value": 1086,
+    "name": "Bang Kamprad Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Western",
+    "lat": 8.221388816833496,
+    "long": 99.1963882446289
+  },
+  {
+    "number": "1087",
+    "value": 1087,
+    "name": "Ko Lanta Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Western",
+    "lat": 7.544722080230713,
+    "long": 99.04638671875
+  },
+  {
+    "number": "1088",
+    "value": 1088,
+    "name": "Ranong Airport Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Western",
+    "lat": 9.785277366638184,
+    "long": 98.59278106689453
+  },
+  {
+    "number": "1089",
+    "value": 1089,
+    "name": "Ko Samui Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 9.450833320617676,
+    "long": 100.03333282470703
+  },
+  {
+    "number": "1090",
+    "value": 1090,
+    "name": "Uthong Agrometeorlogical Station",
+    "type": "Agrometeorological Station",
+    "region": "Central",
+    "lat": 14.305000305175781,
+    "long": 99.86111450195312
+  },
+  {
+    "number": "1091",
+    "value": 1091,
+    "name": "Yala (Betong) Weather Observing Station",
+    "type": "Weather Observing Station",
+    "region": "Southern Eastern",
+    "lat": 5.784444332122803,
+    "long": 101.14778137207031
+  },
+  {
+    "number": "3901",
+    "value": 3901,
+    "name": "Phikuntong Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.384444,
+    "long": 101.869446
+  },
+  {
+    "number": "3902",
+    "value": 3902,
+    "name": "Chana Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.915278,
+    "long": 100.75083
+  },
+  {
+    "number": "3903",
+    "value": 3903,
+    "name": "Na Thawi Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.741389,
+    "long": 100.691666
+  },
+  {
+    "number": "3904",
+    "value": 3904,
+    "name": "Saba Yoi Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.6280556,
+    "long": 100.94806
+  },
+  {
+    "number": "3905",
+    "value": 3905,
+    "name": "Narathiwat Airport Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.5269446,
+    "long": 101.74944
+  },
+  {
+    "number": "3906",
+    "value": 3906,
+    "name": "Amphoe Mueang Narathiwat Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.430278,
+    "long": 101.80167
+  },
+  {
+    "number": "3907",
+    "value": 3907,
+    "name": "Bacho Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.5169444,
+    "long": 101.651665
+  },
+  {
+    "number": "3908",
+    "value": 3908,
+    "name": "Yi-ngo Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.403333,
+    "long": 101.70639
+  },
+  {
+    "number": "3909",
+    "value": 3909,
+    "name": "Mai Kaen Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.6105556,
+    "long": 101.666664
+  },
+  {
+    "number": "3910",
+    "value": 3910,
+    "name": "Sai Buri Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.7008333,
+    "long": 101.617226
+  },
+  {
+    "number": "3911",
+    "value": 3911,
+    "name": "Panare Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.86,
+    "long": 101.49139
+  },
+  {
+    "number": "3912",
+    "value": 3912,
+    "name": "Yaring Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.8661113,
+    "long": 101.36916
+  },
+  {
+    "number": "3913",
+    "value": 3913,
+    "name": "Thung Yang Daeng Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.615556,
+    "long": 101.425
+  },
+  {
+    "number": "3914",
+    "value": 3914,
+    "name": "Maelan Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.6622224,
+    "long": 101.23972
+  },
+  {
+    "number": "3915",
+    "value": 3915,
+    "name": "Rueso Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.3944445,
+    "long": 101.51833
+  },
+  {
+    "number": "3916",
+    "value": 3916,
+    "name": "Cho-airong Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.2247224,
+    "long": 101.810555
+  },
+  {
+    "number": "3917",
+    "value": 3917,
+    "name": "Takbai Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.2588887,
+    "long": 102.055
+  },
+  {
+    "number": "3918",
+    "value": 3918,
+    "name": "Chanae Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.098889,
+    "long": 101.69334
+  },
+  {
+    "number": "3919",
+    "value": 3919,
+    "name": "Sukhirin Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 5.939722,
+    "long": 101.77111
+  },
+  {
+    "number": "3920",
+    "value": 3920,
+    "name": "Si Sakhon Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.229722,
+    "long": 101.498886
+  },
+  {
+    "number": "3921",
+    "value": 3921,
+    "name": "Khok Pho Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.7291665,
+    "long": 101.09695
+  },
+  {
+    "number": "3922",
+    "value": 3922,
+    "name": "Waeng Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 5.927778,
+    "long": 101.88361
+  },
+  {
+    "number": "3923",
+    "value": 3923,
+    "name": "Ra-ngae Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.296389,
+    "long": 101.72833
+  },
+  {
+    "number": "3924",
+    "value": 3924,
+    "name": "Su-ngai Padi Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.0852776,
+    "long": 101.88028
+  },
+  {
+    "number": "3925",
+    "value": 3925,
+    "name": "Su-ngai Kolok Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.029444,
+    "long": 101.96611
+  },
+  {
+    "number": "3926",
+    "value": 3926,
+    "name": "Kapho Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.5591664,
+    "long": 101.53445
+  },
+  {
+    "number": "3927",
+    "value": 3927,
+    "name": "Raman Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.4783335,
+    "long": 101.424164
+  },
+  {
+    "number": "3928",
+    "value": 3928,
+    "name": "Amphoe Mueang Yala Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.5416665,
+    "long": 101.28139
+  },
+  {
+    "number": "3929",
+    "value": 3929,
+    "name": "Krong Pinang Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.411111,
+    "long": 101.27333
+  },
+  {
+    "number": "3930",
+    "value": 3930,
+    "name": "Kabang Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.4275,
+    "long": 101.019165
+  },
+  {
+    "number": "3931",
+    "value": 3931,
+    "name": "Bannang Sata Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.266667,
+    "long": 101.26444
+  },
+  {
+    "number": "3932",
+    "value": 3932,
+    "name": "Yaha Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.4783335,
+    "long": 101.135
+  },
+  {
+    "number": "3933",
+    "value": 3933,
+    "name": "Than To Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.1675,
+    "long": 101.17944
+  },
+  {
+    "number": "3934",
+    "value": 3934,
+    "name": "Mayo Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.7183332,
+    "long": 101.41028
+  },
+  {
+    "number": "3935",
+    "value": 3935,
+    "name": "Yarang Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.759722,
+    "long": 101.29361
+  },
+  {
+    "number": "3936",
+    "value": 3936,
+    "name": "Pattani City Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.8922224,
+    "long": 101.26195
+  },
+  {
+    "number": "3937",
+    "value": 3937,
+    "name": "Nong Chik Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.8475,
+    "long": 101.17639
+  },
+  {
+    "number": "3938",
+    "value": 3938,
+    "name": "Thepha Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 6.828889,
+    "long": 100.965
+  },
+  {
+    "number": "3939",
+    "value": 3939,
+    "name": "Betong Automatic Weather Station",
+    "type": "Automatic Weather Station",
+    "region": "Southern Eastern",
+    "lat": 5.7733335,
+    "long": 101.06084
+  }
+]

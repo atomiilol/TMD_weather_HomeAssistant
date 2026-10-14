@@ -64,5 +64,5 @@ async def test_manifest(hass):
     assert integration.config_flow
     assert integration.manifest["integration_type"] == "service"
     assert integration.manifest["iot_class"] == "cloud_polling"
-    assert integration.manifest["version"] == "0.4.1"
+    assert integration.manifest["version"] == "0.5.0"
     assert integration.manifest["requirements"] == []

@@ -29,6 +29,7 @@ from homeassistant.util import dt as dt_util
 from .api import BANGKOK, ForecastPoint, WeatherValues
 from .const import ATTRIBUTION, DOMAIN
 from .coordinator import (
+    TMDAWSObservationDataUpdateCoordinator,
     TMDDailyForecastDataUpdateCoordinator,
     TMDHourlyForecastDataUpdateCoordinator,
     TMDObservationDataUpdateCoordinator,
@@ -151,13 +152,19 @@ async def async_setup_entry(
     """Add supported readings, including newly supplied values on later updates."""
     runtime = entry.runtime_data
     registry = er.async_get(hass)
-    source = runtime.observation_coordinator or runtime.hourly_coordinator
+    source = (
+        runtime.aws_coordinator
+        or runtime.observation_coordinator
+        or runtime.hourly_coordinator
+    )
     created_current: set[str] = set()
     created_daily: set[str] = set()
     unsupported = {
         description.key
         for description in CURRENT_SENSORS
-        if description.station_only and runtime.observation_coordinator is None
+        if description.station_only
+        and runtime.observation_coordinator is None
+        and (runtime.aws_coordinator is None or description.key == "dew_point")
     }
     # Clean up only fields the selected source cannot provide. Transient gaps in
     # supported readings must not remove an entity's customized identity/history.
@@ -212,15 +219,91 @@ async def async_setup_entry(
 
     add_current_sensors()
     add_daily_sensors()
+    if runtime.aws_coordinator is not None:
+        async_add_entities([TMDAWSStationSensor(entry), TMDAWSStatusSensor(entry)])
     entry.async_on_unload(source.async_add_listener(add_current_sensors))
     entry.async_on_unload(
         runtime.daily_coordinator.async_add_listener(add_daily_sensors)
     )
 
 
+class TMDAWSStationSensor(
+    CoordinatorEntity[TMDAWSObservationDataUpdateCoordinator], SensorEntity
+):
+    """Always reveal which station supplies measurements, including during outages."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "selected_aws_station"
+
+    def __init__(self, entry: TMDWeatherConfigEntry) -> None:
+        coordinator = entry.runtime_data.aws_coordinator
+        assert coordinator is not None
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.unique_id}_aws_station"
+        self._attr_device_info = tmd_device_info(entry)
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def native_value(self) -> str:
+        return f"{self.coordinator.record.number} — {self.coordinator.record.name}"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | int | None]:
+        record = self.coordinator.record
+        return {
+            "aws_station_id": record.aws_id,
+            "region": record.region,
+            "station_type": record.station_type,
+        }
+
+
+class TMDAWSStatusSensor(TMDAWSStationSensor):
+    """Explain absent readings without hiding behind a generic unknown value."""
+
+    _attr_translation_key = "aws_station_status"
+    _attr_device_class = SensorDeviceClass.ENUM
+
+    def __init__(self, entry: TMDWeatherConfigEntry) -> None:
+        super().__init__(entry)
+        self._attr_unique_id = f"{entry.unique_id}_aws_station_status"
+        self._attr_options = [
+            "online",
+            "offline",
+            "stale",
+            "no_observations",
+            "connection_error",
+        ]
+
+    @property
+    def native_value(self) -> str:
+        if not self.coordinator.last_update_success or not self.coordinator.data:
+            return "connection_error"
+        response = self.coordinator.data
+        if not response.status.online:
+            return "offline"
+        if response.observation is None:
+            return "no_observations"
+        return "online" if response.available(dt_util.utcnow()) else "stale"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | int | None]:
+        response = self.coordinator.data
+        return {
+            **super().extra_state_attributes,
+            "last_observation": response.observation.timestamp.isoformat()
+            if response and response.observation
+            else None,
+        }
+
+
 class TMDCurrentSensor(
     CoordinatorEntity[
-        TMDHourlyForecastDataUpdateCoordinator | TMDObservationDataUpdateCoordinator
+        TMDHourlyForecastDataUpdateCoordinator
+        | TMDObservationDataUpdateCoordinator
+        | TMDAWSObservationDataUpdateCoordinator
     ],
     SensorEntity,
 ):
@@ -236,14 +319,18 @@ class TMDCurrentSensor(
         """Use the same source and location identity as the weather entity."""
         self._runtime = entry.runtime_data
         super().__init__(
-            self._runtime.observation_coordinator or self._runtime.hourly_coordinator
+            self._runtime.aws_coordinator
+            or self._runtime.observation_coordinator
+            or self._runtime.hourly_coordinator
         )
         self.entity_description = description
-        if (
-            description.key == "model_hour_rain"
-            and self._runtime.observation_coordinator is not None
+        if description.key == "model_hour_rain" and (
+            self._runtime.observation_coordinator is not None
+            or self._runtime.aws_coordinator is not None
         ):
             self._attr_translation_key = "station_rainfall"
+        if description.key == "pressure" and self._runtime.aws_coordinator is not None:
+            self._attr_translation_key = "station_pressure"
         self._attr_unique_id = f"{entry.unique_id}_{description.key}"
         self._attr_device_info = tmd_device_info(entry)
 
@@ -257,7 +344,10 @@ class TMDCurrentSensor(
         """Follow current-source update success and freshness."""
         return (
             super().available
-            and current_values(self._runtime).temperature is not None
+            and (
+                self._runtime.aws_coordinator is not None
+                or current_values(self._runtime).temperature is not None
+            )
             and self.native_value is not None
         )
 
@@ -265,7 +355,9 @@ class TMDCurrentSensor(
     def extra_state_attributes(self) -> dict[str, str]:
         """Disclose modeled values explicitly, including when a source fails."""
         return {
-            "data_source": "station"
+            "data_source": "aws_station"
+            if self._runtime.aws_coordinator is not None
+            else "station"
             if self._runtime.observation_coordinator is not None
             else "nwp_model"
         }

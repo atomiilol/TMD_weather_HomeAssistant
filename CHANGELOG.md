@@ -3,6 +3,101 @@
 Versions follow semantic versioning. A version becomes available through HACS
 after the corresponding GitHub Release is published; a tag alone is insufficient.
 
+## 0.5.0 — 2026-10-14
+
+Requires **Home Assistant 2026.10.1 or later**.
+
+- Promote AWS physical station observations to the stable integration. New setup
+  offers AWS measurements or modeled NWP weather, with the existing NWP token
+  required for hourly/daily forecasts.
+- Remove observation API UID/UKEY fields from setup, reauthentication and
+  reconfiguration. AWS observations require no credentials. Existing saved legacy
+  entries remain compatible until explicitly changed; selecting AWS or modeled
+  weather removes their retired station keys without replacing the entry.
+- Report rejected saved legacy access as an observation failure with guidance to
+  reconfigure, rather than requesting an unrelated replacement NWP token.
+- Package the user's 227-station coordinate catalog unchanged. Rank nearby
+  stations locally and check live observations nearest first, stopping at the
+  first usable online station within 100 km. No extra geocoding API is required.
+- Include selected-station/status sensors, station controls and a confirmation
+  dropdown. AWS weather cards use the explicitly labeled NWP modeled condition;
+  current measurements remain AWS observations and forecasts retain their location.
+- Preserve existing sources, configuration, options and supported entity IDs on
+  upgrade. Regular AWS polling only requests the saved station every ten minutes.
+- Publish a normal stable GitHub release for HACS installation/update notifications.
+
+## 0.5.0b3 — 2026-10-14
+
+**AWS stations beta. Requires Home Assistant 2026.10.1 or later.**
+
+- Package the user's updated 227-station JSON unchanged, including each station's
+  latitude and longitude. Preserve all station IDs, names, types and regions.
+- Replace the full-catalog API scan with local great-circle distance ranking.
+  Check candidates within 100 km one at a time, nearest first, and stop at the
+  first online station with usable observations no older than three hours.
+  A healthy nearest candidate needs only one request, including on first setup.
+- Keep stations across region/province borders eligible. No external geocoding
+  service or province dataset is needed.
+- Populate confirmation alternatives and distances from the local catalog,
+  including stations not yet requested. Show progress for nearby candidates.
+- Preserve live response identity/location checks, short unusable-station caching,
+  existing selected stations, configuration and entity IDs. Normal polling still
+  requests only the saved station every ten minutes; forecasts are unchanged.
+
+## 0.5.0b2 — 2026-10-14
+
+**AWS stations beta. Requires Home Assistant 2026.10.1 or later.**
+
+- Show automatic discovery counts/progress and persist the six-hour public
+  station-coordinate cache across Home Assistant restarts. The first uncached
+  scan still requires fetching catalog stations; manual selection skips it.
+- Replace the empty confirmation page with a station dropdown that displays the
+  automatically chosen station and nearby alternatives. Validate changes before
+  saving and record an overridden automatic selection as manual.
+- Add a persistent selected-station indicator, station-status sensor and station
+  control dropdown for the current region. Keep identity/control visible during
+  outages, and preserve the saved station and forecast coordinates on failures.
+- Use the existing NWP model's current-hour condition label for the weather card,
+  explicitly named Weather (modeled condition) and tagged condition_source=nwp_model.
+  All measurements remain AWS observations. Missing, expired or unsupported model
+  condition codes remain unknown; no sky condition is invented from measurements.
+- Subscribe to hourly model updates for the condition label while retaining
+  independent forecasts. Hide cached AWS readings after failed station refreshes.
+- Verify live AWS observation parsing and include a sanitized live response fixture
+  with embedded forecast/token metadata excluded.
+
+Field units still follow the supplied API evidence. UTC clock interpretation is
+consistent with the live hourly observations checked in development.
+
+## 0.5.0b1 — 2026-10-14
+
+**AWS stations beta. Requires Home Assistant 2026.10.1 or later.**
+
+- Package the supplied 227-station catalog unchanged. Select by region/name or
+  automatically discover the nearest reachable online station within 100 km
+  with observations no older than three hours. Prefill Home Assistant location
+  and allow independent observation search coordinates.
+- Cache station geometry for six hours, limit discovery to four concurrent
+  requests, support cancellable setup progress and save the selected AWSID.
+  Normal updates only poll the selected station, every ten minutes.
+- Add public AWS observations with strict catalog/response ID matching, UTC
+  timestamp parsing isolated as a beta assumption, station pressure in hPa,
+  wind in knots converted to the integration's native m/s and visibility in
+  meters converted to km only when WV_SENSOR reports a sensor.
+- Keep NWP hourly/daily forecasts and their coordinates unchanged. On AWS
+  outages, sensors become unavailable and current weather readings are absent;
+  healthy forecasts remain accessible through weather.get_forecasts.
+- Reconfigure source, selection mode, search coordinates or station without
+  replacing the entry or supported entity IDs. Add redacted diagnostics with
+  local/live metadata, station availability and distance.
+- Publish beta tags only as GitHub prereleases, without replacing the stable
+  latest release. Include the station database in standard HACS source installs.
+
+Live AWS verification was blocked by the development cloud's network allowlist.
+Tests use synthetic responses based on the supplied schema; UTC interpretation
+and field units follow the user's supplied evidence and need live confirmation.
+See docs/aws-beta.md for installation, discovery costs and test instructions.
+
 ## 0.4.1 — 2026-10-12
 
 Requires **Home Assistant 2026.10.1 or later**.
