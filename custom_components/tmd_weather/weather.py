@@ -34,6 +34,7 @@ from homeassistant.util import dt as dt_util
 from .api import BANGKOK, ForecastPoint, WeatherValues
 from .const import ATTRIBUTION
 from .coordinator import (
+    TMDAWSObservationDataUpdateCoordinator,
     TMDDailyForecastDataUpdateCoordinator,
     TMDHourlyForecastDataUpdateCoordinator,
     TMDObservationDataUpdateCoordinator,
@@ -86,7 +87,9 @@ def forecast(point: ForecastPoint, *, daily: bool) -> Forecast:
 
 class TMDWeatherEntity(
     CoordinatorWeatherEntity[
-        TMDHourlyForecastDataUpdateCoordinator | TMDObservationDataUpdateCoordinator,
+        TMDHourlyForecastDataUpdateCoordinator
+        | TMDObservationDataUpdateCoordinator
+        | TMDAWSObservationDataUpdateCoordinator,
         TMDDailyForecastDataUpdateCoordinator,
         TMDHourlyForecastDataUpdateCoordinator,
     ]
@@ -110,7 +113,8 @@ class TMDWeatherEntity(
         runtime = entry.runtime_data
         self._runtime = runtime
         super().__init__(
-            observation_coordinator=runtime.observation_coordinator
+            observation_coordinator=runtime.aws_coordinator
+            or runtime.observation_coordinator
             or runtime.hourly_coordinator,
             hourly_coordinator=runtime.hourly_coordinator,
             daily_coordinator=runtime.daily_coordinator,
@@ -122,6 +126,18 @@ class TMDWeatherEntity(
         self._attr_device_info = device_info(entry)
 
     @property
+    def extra_state_attributes(self) -> dict[str, str | int] | None:
+        """Distinguish station pressure and disclose the saved observation source."""
+        if aws := self._runtime.aws_coordinator:
+            return {
+                "data_source": "aws_station",
+                "aws_station_id": aws.aws_id,
+                "station_name": aws.record.name,
+                "pressure_type": "station",
+            }
+        return None
+
+    @property
     def _current(self) -> WeatherValues:
         """Return current values only while the configured source is fresh."""
         return current_values(self._runtime)
@@ -129,6 +145,15 @@ class TMDWeatherEntity(
     @property
     def available(self) -> bool:
         """Daily failures cannot invalidate current weather; stale hours can."""
+        if self._runtime.aws_coordinator is not None:
+            # HA filters unavailable weather entities out of get_forecasts.
+            # Keep independent predictions usable while station readings are
+            # absent; current state is unknown, with no model substitution.
+            return (
+                (super().available and self._current.temperature is not None)
+                or self._hourly.last_update_success
+                or self._daily.last_update_success
+            )
         return super().available and self._current.temperature is not None
 
     @property

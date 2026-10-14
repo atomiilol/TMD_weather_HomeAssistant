@@ -10,7 +10,12 @@ from homeassistant.util import dt as dt_util
 
 from .api import current_point
 from .const import (
+    AWS_SOURCE,
     CONF_ACCESS_TOKEN,
+    CONF_AWS_LATITUDE,
+    CONF_AWS_LONGITUDE,
+    CONF_AWS_SELECTION_MODE,
+    CONF_AWS_USE_HA_LOCATION,
     CONF_FORECAST_SOURCE,
     CONF_OBSERVATION_KEY,
     CONF_OBSERVATION_UID,
@@ -19,6 +24,7 @@ from .const import (
     OBSERVATION_SOURCE,
 )
 from .coordinator import TMDForecastDataUpdateCoordinator, TMDWeatherConfigEntry
+from .observations import distance_km
 
 TO_REDACT = {
     CONF_ACCESS_TOKEN,
@@ -26,6 +32,8 @@ TO_REDACT = {
     CONF_OBSERVATION_KEY,
     CONF_LATITUDE,
     CONF_LONGITUDE,
+    CONF_AWS_LATITUDE,
+    CONF_AWS_LONGITUDE,
 }
 
 
@@ -55,7 +63,7 @@ async def async_get_config_entry_diagnostics(
     point = current_point(runtime.hourly_coordinator.data, dt_util.utcnow())
     observation = runtime.observation_coordinator
     station = observation.data if observation is not None else None
-    return {
+    result: dict[str, Any] = {
         "config": async_redact_data(dict(config_entry.data), TO_REDACT),
         "forecast_source": config_entry.options.get(
             CONF_FORECAST_SOURCE, DEFAULT_FORECAST_SOURCE
@@ -94,3 +102,61 @@ async def async_get_config_entry_diagnostics(
         "hourly": _metadata(runtime.hourly_coordinator),
         "daily": _metadata(runtime.daily_coordinator),
     }
+    if aws := runtime.aws_coordinator:
+        response = aws.data
+        status = response.status if response else None
+        observation_aws = response.observation if response else None
+        latitude = config_entry.data.get(
+            CONF_AWS_LATITUDE, config_entry.data[CONF_LATITUDE]
+        )
+        longitude = config_entry.data.get(
+            CONF_AWS_LONGITUDE, config_entry.data[CONF_LONGITUDE]
+        )
+        result.update(
+            {
+                "current_source": AWS_SOURCE,
+                "current_model_values": None,
+                "current_valid_time": observation_aws.timestamp.isoformat()
+                if observation_aws
+                else None,
+                "current_observation_values": asdict(observation_aws.values)
+                if observation_aws
+                else None,
+                "observation_update_success": aws.last_update_success,
+                "observation_station": {"id": aws.aws_id, "name": aws.record.name},
+                "aws": {
+                    "selection_mode": config_entry.data.get(
+                        CONF_AWS_SELECTION_MODE, "manual"
+                    ),
+                    "use_home_assistant_location": config_entry.data.get(
+                        CONF_AWS_USE_HA_LOCATION, True
+                    ),
+                    "selection_location": async_redact_data(
+                        {CONF_LATITUDE: latitude, CONF_LONGITUDE: longitude}, TO_REDACT
+                    ),
+                    "station_database": asdict(aws.record),
+                    "station_live": asdict(status) if status else None,
+                    "observation_available": bool(
+                        response and response.available(dt_util.utcnow())
+                    ),
+                    "latest_observation_timestamp": (
+                        observation_aws.timestamp.isoformat()
+                        if observation_aws
+                        else None
+                    ),
+                    "distance_km": distance_km(
+                        latitude, longitude, status.latitude, status.longitude
+                    )
+                    if status
+                    and status.latitude is not None
+                    and status.longitude is not None
+                    else None,
+                    "timestamp_assumption": "UTC",
+                    "pressure_type": "station",
+                    "response_wind_unit": "kn",
+                    "response_visibility_unit": "m",
+                },
+            }
+        )
+        result["fetch_intervals_minutes"]["aws"] = 10
+    return result

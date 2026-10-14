@@ -29,6 +29,7 @@ from homeassistant.util import dt as dt_util
 from .api import BANGKOK, ForecastPoint, WeatherValues
 from .const import ATTRIBUTION, DOMAIN
 from .coordinator import (
+    TMDAWSObservationDataUpdateCoordinator,
     TMDDailyForecastDataUpdateCoordinator,
     TMDHourlyForecastDataUpdateCoordinator,
     TMDObservationDataUpdateCoordinator,
@@ -151,13 +152,19 @@ async def async_setup_entry(
     """Add supported readings, including newly supplied values on later updates."""
     runtime = entry.runtime_data
     registry = er.async_get(hass)
-    source = runtime.observation_coordinator or runtime.hourly_coordinator
+    source = (
+        runtime.aws_coordinator
+        or runtime.observation_coordinator
+        or runtime.hourly_coordinator
+    )
     created_current: set[str] = set()
     created_daily: set[str] = set()
     unsupported = {
         description.key
         for description in CURRENT_SENSORS
-        if description.station_only and runtime.observation_coordinator is None
+        if description.station_only
+        and runtime.observation_coordinator is None
+        and (runtime.aws_coordinator is None or description.key == "dew_point")
     }
     # Clean up only fields the selected source cannot provide. Transient gaps in
     # supported readings must not remove an entity's customized identity/history.
@@ -220,7 +227,9 @@ async def async_setup_entry(
 
 class TMDCurrentSensor(
     CoordinatorEntity[
-        TMDHourlyForecastDataUpdateCoordinator | TMDObservationDataUpdateCoordinator
+        TMDHourlyForecastDataUpdateCoordinator
+        | TMDObservationDataUpdateCoordinator
+        | TMDAWSObservationDataUpdateCoordinator
     ],
     SensorEntity,
 ):
@@ -236,14 +245,18 @@ class TMDCurrentSensor(
         """Use the same source and location identity as the weather entity."""
         self._runtime = entry.runtime_data
         super().__init__(
-            self._runtime.observation_coordinator or self._runtime.hourly_coordinator
+            self._runtime.aws_coordinator
+            or self._runtime.observation_coordinator
+            or self._runtime.hourly_coordinator
         )
         self.entity_description = description
-        if (
-            description.key == "model_hour_rain"
-            and self._runtime.observation_coordinator is not None
+        if description.key == "model_hour_rain" and (
+            self._runtime.observation_coordinator is not None
+            or self._runtime.aws_coordinator is not None
         ):
             self._attr_translation_key = "station_rainfall"
+        if description.key == "pressure" and self._runtime.aws_coordinator is not None:
+            self._attr_translation_key = "station_pressure"
         self._attr_unique_id = f"{entry.unique_id}_{description.key}"
         self._attr_device_info = tmd_device_info(entry)
 
@@ -257,7 +270,10 @@ class TMDCurrentSensor(
         """Follow current-source update success and freshness."""
         return (
             super().available
-            and current_values(self._runtime).temperature is not None
+            and (
+                self._runtime.aws_coordinator is not None
+                or current_values(self._runtime).temperature is not None
+            )
             and self.native_value is not None
         )
 
@@ -265,7 +281,9 @@ class TMDCurrentSensor(
     def extra_state_attributes(self) -> dict[str, str]:
         """Disclose modeled values explicitly, including when a source fails."""
         return {
-            "data_source": "station"
+            "data_source": "aws_station"
+            if self._runtime.aws_coordinator is not None
+            else "station"
             if self._runtime.observation_coordinator is not None
             else "nwp_model"
         }

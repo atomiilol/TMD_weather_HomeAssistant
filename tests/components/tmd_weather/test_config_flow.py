@@ -30,9 +30,12 @@ async def test_user_defaults_and_success(hass, mock_client):
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
     assert result["type"] == FlowResultType.FORM
-    data = result["data_schema"]({"access_token": "test-secret"})
+    data = result["data_schema"](
+        {"access_token": "test-secret", "current_source": "legacy"}
+    )
     assert data == {
         "access_token": "test-secret",
+        "current_source": "legacy",
         "latitude": 13.75,
         "longitude": 100.5,
     }

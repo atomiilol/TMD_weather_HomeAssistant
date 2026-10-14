@@ -5,7 +5,6 @@ from typing import Any
 
 from homeassistant.config_entries import (
     ConfigEntry,
-    ConfigFlow,
     ConfigFlowResult,
     OptionsFlow,
 )
@@ -37,8 +36,11 @@ from .api import (
     current_point,
     location_id,
 )
+from .aws_flow import AWSStationSelectionFlow
 from .const import (
+    AWS_SOURCE,
     CONF_ACCESS_TOKEN,
+    CONF_CURRENT_SOURCE,
     CONF_FETCH_INTERVAL,
     CONF_FORECAST_SOURCE,
     CONF_OBSERVATION_KEY,
@@ -88,6 +90,7 @@ async def validate_forecast_source(
         data = await client.async_get_hourly_forecast(duration=1)
         if (
             not entry.data.get(CONF_OBSERVATION_UID)
+            and entry.data.get(CONF_CURRENT_SOURCE) != AWS_SOURCE
             and current_point(data, dt_util.utcnow()) is None
         ):
             raise TMDInvalidResponseError("No usable current model interval")
@@ -96,7 +99,7 @@ async def validate_forecast_source(
     return None
 
 
-class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
+class TMDWeatherConfigFlow(AWSStationSelectionFlow, domain=DOMAIN):
     """One stable entry per requested model coordinate, regardless of token."""
 
     VERSION = 1
@@ -114,7 +117,8 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> str | None:
         """Verify a current hourly sample and a daily sample with bounded calls."""
         uid, key = data.get(CONF_OBSERVATION_UID), data.get(CONF_OBSERVATION_KEY)
-        if bool(uid) != bool(key):
+        aws_source = data.get(CONF_CURRENT_SOURCE) == AWS_SOURCE
+        if not aws_source and bool(uid) != bool(key):
             return "observation_credentials_required"
         try:
             client = TMDClient(
@@ -125,10 +129,14 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
                 forecast_source=forecast_source,
             )
             hourly = await client.async_get_hourly_forecast(duration=1)
-            if not uid and current_point(hourly, dt_util.utcnow()) is None:
+            if (
+                not aws_source
+                and not uid
+                and current_point(hourly, dt_util.utcnow()) is None
+            ):
                 raise TMDInvalidResponseError("No usable current model interval")
             await client.async_get_daily_forecast(duration=1)
-            if uid and key:
+            if not aws_source and uid and key:
                 await TMDObservationClient(
                     async_get_clientsession(self.hass),
                     uid,
@@ -153,6 +161,9 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
             if error := await self._validate(user_input):
                 errors["base"] = error
             else:
+                if user_input.get(CONF_CURRENT_SOURCE) == AWS_SOURCE:
+                    self._aws_pending = dict(user_input)
+                    return await self.async_step_aws_selection()
                 title = (
                     self.hass.config.location_name
                     if location_id(latitude, longitude)
@@ -170,6 +181,15 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=probatio.Schema(
                 {
                     probatio.Required(probatio.Secret(CONF_ACCESS_TOKEN)): str,
+                    probatio.Optional(
+                        CONF_CURRENT_SOURCE, default=AWS_SOURCE
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[AWS_SOURCE, "legacy"],
+                            mode=SelectSelectorMode.DROPDOWN,
+                            translation_key="current_source",
+                        )
+                    ),
                     probatio.Optional(probatio.Secret(CONF_OBSERVATION_UID)): str,
                     probatio.Optional(probatio.Secret(CONF_OBSERVATION_KEY)): str,
                     probatio.Required(
@@ -228,6 +248,10 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         entry = self._get_reconfigure_entry()
         if user_input is not None:
+            if user_input.get(CONF_CURRENT_SOURCE) == AWS_SOURCE:
+                self._aws_pending = {**entry.data, CONF_CURRENT_SOURCE: AWS_SOURCE}
+                self._aws_reconfigure = True
+                return await self.async_step_aws_selection()
             updates = {
                 key: value
                 for key, value in user_input.items()
@@ -254,6 +278,16 @@ class TMDWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
             data_schema=probatio.Schema(
                 {
+                    probatio.Optional(
+                        CONF_CURRENT_SOURCE,
+                        default=entry.data.get(CONF_CURRENT_SOURCE, "legacy"),
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[AWS_SOURCE, "legacy"],
+                            mode=SelectSelectorMode.DROPDOWN,
+                            translation_key="current_source",
+                        )
+                    ),
                     probatio.Required(
                         "use_observations",
                         default=bool(entry.data.get(CONF_OBSERVATION_UID)),

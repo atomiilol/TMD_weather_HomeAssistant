@@ -7,7 +7,7 @@ import re
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
-SEMVER = re.compile(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)")
+SEMVER = re.compile(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:b[1-9]\d*)?")
 
 
 def validate(root: Path = ROOT, tag: str | None = None) -> str:
@@ -18,7 +18,9 @@ def validate(root: Path = ROOT, tag: str | None = None) -> str:
     project = tomllib.loads((root / "pyproject.toml").read_text())
     version = manifest["version"]
     if not isinstance(version, str) or SEMVER.fullmatch(version) is None:
-        raise ValueError("Manifest version must be a semantic x.y.z version")
+        raise ValueError(
+            "Manifest version must be x.y.z or a Home Assistant x.y.zbN beta"
+        )
     if project["project"]["version"] != version:
         raise ValueError("Project and integration versions differ")
     if tag is not None and tag != f"v{version}":
@@ -50,12 +52,21 @@ def validate(root: Path = ROOT, tag: str | None = None) -> str:
     ]:
         if not path.is_file():
             raise ValueError(f"Missing packaging file: {path.relative_to(root)}")
+    if (integration / "aws.py").exists() and not (
+        integration / "data/tmd_aws_stations.json"
+    ).is_file():
+        raise ValueError("Missing packaged AWS station database")
     return version
 
 
 def main() -> None:
     """Validate a checkout or proposed release; never create a tag or publish."""
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--github-output",
+        type=Path,
+        help="Write validated version and prerelease status for GitHub Actions",
+    )
     parser.add_argument(
         "--tag", help="Require a release tag matching v<manifest version>"
     )
@@ -67,6 +78,11 @@ def main() -> None:
     args = parser.parse_args()
     try:
         version = validate(tag=args.tag)
+        if args.github_output is not None:
+            with args.github_output.open("a", encoding="utf-8") as output:
+                output.write(
+                    f"version={version}\nprerelease={str('b' in version).lower()}\n"
+                )
         if args.notes_file is not None:
             args.notes_file.write_text(release_notes(), encoding="utf-8")
     except (ValueError, KeyError, OSError) as error:
