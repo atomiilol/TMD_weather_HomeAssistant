@@ -3,6 +3,35 @@
 Versions follow semantic versioning. A version becomes available through HACS
 after the corresponding GitHub Release is published; a tag alone is insufficient.
 
+## 0.5.0b1 — 2026-10-14
+
+**AWS stations beta. Requires Home Assistant 2026.10.1 or later.**
+
+- Package the supplied 227-station catalog unchanged. Select by region/name or
+  automatically discover the nearest reachable online station within 100 km
+  with observations no older than three hours. Prefill Home Assistant location
+  and allow independent observation search coordinates.
+- Cache station geometry for six hours, limit discovery to four concurrent
+  requests, support cancellable setup progress and save the selected AWSID.
+  Normal updates only poll the selected station, every ten minutes.
+- Add public AWS observations with strict catalog/response ID matching, UTC
+  timestamp parsing isolated as a beta assumption, station pressure in hPa,
+  wind in knots converted to the integration's native m/s and visibility in
+  meters converted to km only when WV_SENSOR reports a sensor.
+- Keep NWP hourly/daily forecasts and their coordinates unchanged. On AWS
+  outages, sensors become unavailable and current weather readings are absent;
+  healthy forecasts remain accessible through weather.get_forecasts.
+- Reconfigure source, selection mode, search coordinates or station without
+  replacing the entry or supported entity IDs. Add redacted diagnostics with
+  local/live metadata, station availability and distance.
+- Publish beta tags only as GitHub prereleases, without replacing the stable
+  latest release. Include the station database in standard HACS source installs.
+
+Live AWS verification was blocked by the development cloud's network allowlist.
+Tests use synthetic responses based on the supplied schema; UTC interpretation
+and field units follow the user's supplied evidence and need live confirmation.
+See docs/aws-beta.md for installation, discovery costs and test instructions.
+
 ## 0.4.1 — 2026-10-12
 
 Requires **Home Assistant 2026.10.1 or later**.

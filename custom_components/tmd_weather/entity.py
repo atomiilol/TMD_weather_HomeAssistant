@@ -9,6 +9,11 @@ from .observations import observation_is_fresh
 
 def current_values(runtime: TMDWeatherData) -> WeatherValues:
     """Select the configured source, without substituting a model during outages."""
+    if aws := runtime.aws_coordinator:
+        if aws.data and aws.data.available(dt_util.utcnow()):
+            assert aws.data.observation is not None
+            return aws.data.observation.values
+        return WeatherValues()
     if observation := runtime.observation_coordinator:
         if observation.data and observation_is_fresh(
             observation.data, dt_util.utcnow()

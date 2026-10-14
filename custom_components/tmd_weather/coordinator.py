@@ -15,7 +15,12 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .api import ForecastData, TMDAPIError, TMDAuthError, TMDClient, TMDRateLimitError
+from .aws import TMDAWSClient, TMDAWSResponse
 from .const import (
+    AWS_SOURCE,
+    AWS_UPDATE_INTERVAL,
+    CONF_AWS_STATION_ID,
+    CONF_CURRENT_SOURCE,
     CONF_FETCH_INTERVAL,
     CONF_FORECAST_SOURCE,
     CONF_OBSERVATION_UID,
@@ -26,6 +31,7 @@ from .const import (
     OBSERVATION_UPDATE_INTERVAL,
 )
 from .observations import StationObservation, TMDObservationClient
+from .stations import TMDAWSStationRecord
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,6 +51,7 @@ class TMDWeatherData:
     hourly_coordinator: TMDHourlyForecastDataUpdateCoordinator
     daily_coordinator: TMDDailyForecastDataUpdateCoordinator
     observation_coordinator: TMDObservationDataUpdateCoordinator | None = None
+    aws_coordinator: TMDAWSObservationDataUpdateCoordinator | None = None
 
 
 type TMDWeatherConfigEntry = ConfigEntry[TMDWeatherData]
@@ -54,6 +61,22 @@ def device_info(entry: TMDWeatherConfigEntry) -> DeviceInfo:
     """Describe the configured weather service with stable coordinate identity."""
     assert entry.unique_id is not None
     domain2 = entry.options.get(CONF_FORECAST_SOURCE) == "domain_2"
+    if entry.data.get(CONF_CURRENT_SOURCE) == AWS_SOURCE:
+        record = (
+            entry.runtime_data.aws_coordinator.record
+            if entry.runtime_data.aws_coordinator
+            else None
+        )
+        return DeviceInfo(
+            entry_type=DeviceEntryType.SERVICE,
+            identifiers={(DOMAIN, entry.unique_id)},
+            manufacturer=MANUFACTURER,
+            model=f"TMD AWS: {record.station_type} ({record.region})"
+            if record
+            else "TMD AWS station",
+            name=entry.title,
+            configuration_url="https://www.tmd.go.th/",
+        )
     return DeviceInfo(
         entry_type=DeviceEntryType.SERVICE,
         identifiers={(DOMAIN, entry.unique_id)},
@@ -142,6 +165,35 @@ class TMDObservationDataUpdateCoordinator(
     async def _async_update_data(self) -> StationObservation:
         """Reselect from fresh stations if a station disappears or lacks data."""
         return await _async_fetch(self.client.async_get_current_conditions)
+
+
+class TMDAWSObservationDataUpdateCoordinator(
+    TimestampDataUpdateCoordinator[TMDAWSResponse]
+):
+    """Only poll the saved station; discovery is confined to configuration."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: TMDWeatherConfigEntry,
+        client: TMDAWSClient,
+        record: TMDAWSStationRecord,
+    ) -> None:
+        super().__init__(
+            hass,
+            _LOGGER,
+            config_entry=entry,
+            name=f"{DOMAIN} AWS observations",
+            update_interval=AWS_UPDATE_INTERVAL,
+            always_update=True,
+        )
+        self.client = client
+        self.record = record
+        self.aws_id = entry.data[CONF_AWS_STATION_ID]
+
+    async def _async_update_data(self) -> TMDAWSResponse:
+        """Retain offline metadata without substituting model measurements."""
+        return await _async_fetch(lambda: self.client.async_get_station(self.aws_id))
 
 
 class TMDHourlyForecastDataUpdateCoordinator(TMDForecastDataUpdateCoordinator):

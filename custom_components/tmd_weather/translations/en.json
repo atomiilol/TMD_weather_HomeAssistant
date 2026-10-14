@@ -4,13 +4,14 @@
     "step": {
       "user": {
         "title": "Connect to TMD NWP",
-        "description": "Create an NWP personal token using Create New Token at the [TMD website]({token_url}). Provide separate observation uid/ukey credentials to use the nearest TMD station for current conditions. Leaving both optional fields blank uses explicitly modeled NWP current conditions. Hourly/daily forecasts always use NWP.",
+        "description": "AWS beta: current observations come from a physical AWS station selected next. An NWP access token is still required for the existing hourly/daily forecasts. Legacy observation credentials are only used when selecting the existing current source. Forecast coordinates default to Home Assistant location.",
         "data": {
           "access_token": "NWP access token",
           "latitude": "Latitude",
           "longitude": "Longitude",
           "observation_uid": "Observation API uid (optional)",
-          "observation_key": "Observation API ukey (optional)"
+          "observation_key": "Observation API ukey (optional)",
+          "current_source": "Current observations"
         },
         "data_description": {
           "access_token": "Enter only the token, without the Bearer prefix. If it expires, Home Assistant will ask you to reauthenticate.",
@@ -40,13 +41,45 @@
         "data": {
           "observation_uid": "Observation API uid (optional)",
           "observation_key": "Observation API ukey (optional)",
-          "use_observations": "Use station observations"
+          "use_observations": "Use station observations",
+          "current_source": "Current observations"
         },
         "data_description": {
           "observation_uid": "Provide with ukey to use actual nearby TMD station observations.",
           "observation_key": "Separate from the NWP token. Leave both fields empty for modeled current conditions.",
           "use_observations": "Turn off to use modeled NWP current conditions while preserving the location and entities."
         }
+      },
+      "aws_selection": {
+        "title": "Choose AWS station selection",
+        "description": "Automatic selection checks stations from the packaged catalog, skipping offline, missing and stale observations. The first scan can take several minutes. Uncheck Use Home Assistant location to override the observation search coordinates. Forecast coordinates remain unchanged.",
+        "data": {
+          "aws_selection_mode": "Observation station selection",
+          "aws_use_ha_location": "Use Home Assistant location",
+          "aws_latitude": "Observation search latitude",
+          "aws_longitude": "Observation search longitude"
+        }
+      },
+      "aws_region": {
+        "title": "Choose station region",
+        "data": {
+          "region": "Region"
+        }
+      },
+      "aws_station": {
+        "title": "Choose AWS station",
+        "description": "Search by station number or name. Manual selection can save an offline station; current readings will be unavailable until it supplies fresh data. Forecasts continue independently.",
+        "data": {
+          "aws_station_id": "AWS station"
+        }
+      },
+      "aws_discover": {
+        "title": "Finding a nearby AWS station",
+        "description": "Checking the supplied station catalog with at most four concurrent requests. You can cancel discovery and choose a station manually."
+      },
+      "aws_confirm": {
+        "title": "Confirm selected station",
+        "description": "Selected {station_number} — {station_name} ({station_region}). Save to use this station for current measurements. Your forecast location stays unchanged."
       }
     },
     "error": {
@@ -58,12 +91,18 @@
       "service_unavailable": "The TMD service or endpoint is unavailable. Try again later.",
       "unknown": "An unexpected TMD API error occurred. Try again later.",
       "observation_credentials_required": "Enter both observation uid and ukey, or leave both empty.",
-      "request_timed_out": "TMD did not respond in time. Domain 2 requests may take up to 60 seconds. Try again later."
+      "request_timed_out": "TMD did not respond in time. Domain 2 requests may take up to 60 seconds. Try again later.",
+      "invalid_station_database": "The packaged AWS station database is missing or invalid. Reinstall this beta and report the problem.",
+      "invalid_aws_selection": "Choose a station and region from the supplied catalog.",
+      "no_aws_station": "No reachable online station with observations from the last three hours was found within 100 km. Try manual selection or a different search location."
     },
     "abort": {
       "already_configured": "This location is already configured.",
       "reauth_successful": "TMD credentials were updated successfully.",
       "reconfigure_successful": "Current-weather source configuration updated successfully."
+    },
+    "progress": {
+      "aws_discovering": "Discovering AWS station coordinates and checking recent observations…"
     }
   },
   "entity": {
@@ -103,6 +142,9 @@
       },
       "forecast_rainfall": {
         "name": "Forecast rainfall today"
+      },
+      "station_pressure": {
+        "name": "Station pressure"
       }
     }
   },
@@ -127,7 +169,7 @@
           "forecast_source": "Forecast source"
         },
         "data_description": {
-          "fetch_interval": "A whole number from 1 to 1440 minutes. Applies to current conditions, hourly forecasts and daily forecasts. Your location and entity IDs are preserved.",
+          "fetch_interval": "A whole number from 1 to 1440 minutes. Applies to current conditions, hourly forecasts and daily forecasts. Your location and entity IDs are preserved. In AWS beta mode, current station observations retain their separate ten-minute interval.",
           "forecast_source": "Domain 2 requests the model TMD describes as a 3 km grid, selecting the nearest grid point within 3 km of your coordinates. It changes modeled current conditions and hourly forecasts. Daily forecasts and real station readings keep their existing sources. The new source is checked before saving."
         }
       }
@@ -150,6 +192,18 @@
       "options": {
         "coordinate": "Existing forecast source",
         "domain_2": "Domain 2 (3 km grid)"
+      }
+    },
+    "current_source": {
+      "options": {
+        "aws_station": "AWS physical station (beta)",
+        "legacy": "Existing source (station credentials or modeled weather)"
+      }
+    },
+    "aws_selection_mode": {
+      "options": {
+        "automatic": "Automatically choose nearest AWS station",
+        "manual": "Select AWS station manually"
       }
     }
   }

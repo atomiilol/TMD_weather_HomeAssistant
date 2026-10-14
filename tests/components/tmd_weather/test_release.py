@@ -6,12 +6,12 @@ import shutil
 from PIL import Image
 import pytest
 
-from script.check_release import ROOT, release_notes, validate
+from script.check_release import ROOT, main, release_notes, validate
 
 
 def test_release_and_hacs_layout():
     """The proposed release has one integration and uses standard HACS refs."""
-    assert validate(tag="v0.4.1") == "0.4.1"
+    assert validate(tag="v0.5.0b1") == "0.5.0b1"
     hacs = json.loads((ROOT / "hacs.json").read_text())
     assert hacs["name"] == "Thai Meteorological Department (TMD)"
     assert hacs["country"] == "TH"
@@ -42,7 +42,9 @@ def release_copy(tmp_path):
 def test_project_version_mismatch(release_copy):
     """Do not distribute divergent project and integration versions."""
     path = release_copy / "pyproject.toml"
-    path.write_text(path.read_text().replace('version = "0.4.1"', 'version = "0.5.0"'))
+    path.write_text(
+        path.read_text().replace('version = "0.5.0b1"', 'version = "0.5.0"')
+    )
     with pytest.raises(ValueError, match="versions differ"):
         validate(release_copy)
 
@@ -59,6 +61,36 @@ def test_missing_brand(release_copy):
     (release_copy / "custom_components/tmd_weather/brand/icon.png").unlink()
     with pytest.raises(ValueError, match="Missing packaging"):
         validate(release_copy)
+
+
+def test_missing_aws_catalog(release_copy):
+    """A HACS source install must include the catalog with the AWS implementation."""
+    (release_copy / "custom_components/tmd_weather/data/tmd_aws_stations.json").unlink()
+    with pytest.raises(ValueError, match="AWS station database"):
+        validate(release_copy)
+
+
+def test_prerelease_workflow_metadata(tmp_path, monkeypatch):
+    """The validated beta instructs the publisher to avoid the latest stable slot."""
+    output = tmp_path / "github-output"
+    monkeypatch.setattr(
+        "sys.argv",
+        ["check_release.py", "--tag", "v0.5.0b1", "--github-output", str(output)],
+    )
+    main()
+    assert output.read_text() == "version=0.5.0b1\nprerelease=true\n"
+
+
+def test_stable_versions_still_valid(release_copy):
+    """Prerelease support preserves the original stable-release conventions."""
+    for name in (
+        "custom_components/tmd_weather/manifest.json",
+        "pyproject.toml",
+        "CHANGELOG.md",
+    ):
+        path = release_copy / name
+        path.write_text(path.read_text().replace("0.5.0b1", "0.5.0"))
+    assert validate(release_copy, tag="v0.5.0") == "0.5.0"
 
 
 def test_release_notes(release_copy):
