@@ -108,7 +108,7 @@
       "reconfigure_successful": "Current-weather source configuration updated successfully."
     },
     "progress": {
-      "aws_discovering": "Checking {checked} of {total} catalog stations. The first search needs to retrieve their coordinates; later searches reuse the cache. Cancel and choose manually to skip the scan."
+      "aws_discovering": "Checking {checked} of {total} nearby stations within 100 km, nearest first. Distances use the supplied catalog coordinates. The search stops when a station has usable recent observations. You can cancel and choose manually."
     }
   },
   "entity": {

@@ -1,7 +1,7 @@
 """AWS identity, freshness, units, HTTP isolation and bounded discovery."""
 
-import asyncio
 from copy import deepcopy
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
@@ -23,6 +23,7 @@ from custom_components.tmd_weather.aws import (
     parse_aws_response,
 )
 from custom_components.tmd_weather.const import AWS_BASE_URL
+from custom_components.tmd_weather.observations import distance_km
 from custom_components.tmd_weather.stations import async_load_stations
 
 NOW = datetime(2026, 10, 11, 3, 30, tzinfo=UTC)
@@ -153,43 +154,38 @@ async def test_http_errors(hass, aioclient_mock, status, expected):
             assert aioclient_mock.call_count == 1
 
 
-async def test_discovery_cache_and_concurrency(hass, aws_payload):
-    records = (await async_load_stations(hass))[:3]
-    active = 0
-    peak = 0
+async def test_discovery_stops_at_nearest_usable(nearby_aws_catalog, aws_payload):
+    """Never contact a farther station once a usable nearer candidate is found."""
+    records = nearby_aws_catalog
     calls = []
 
     async def fetch(aws_id):
-        nonlocal active, peak
-        active += 1
-        peak = max(peak, active)
         calls.append(aws_id)
-        await asyncio.sleep(0)
         value = deepcopy(aws_payload)
         value["data"]["site"]["AWSID"] = aws_id
         value["data"]["site"]["LAT"] = 13.75 + aws_id * 0.01
         if aws_id == 1:
             value["data"]["site"]["ONLINE"] = "n"
-        active -= 1
         return parse_aws_response(value, aws_id, NOW)
 
     client = TMDAWSClient(AsyncMock(spec=ClientSession), records)
     with patch.object(TMDAWSClient, "async_get_station", side_effect=fetch):
         discovery = TMDAWSDiscovery(client)
         assert await discovery.async_nearest(13.75, 100.5) == 2
-        assert sorted(calls) == [1, 2, 3]
+        assert calls == [1, 2]
         calls.clear()
         assert await discovery.async_nearest(13.75, 100.5) == 2
         assert calls == [
             2
         ]  # Skip a recently verified offline station; recheck the choice.
-        assert peak <= 4
+        calls.clear()
         with pytest.raises(TMDInvalidLocationError):
             await discovery.async_nearest(0, 0)
+        assert not calls
 
 
-async def test_discovery_skips_stale_missing_failed(hass, aws_payload):
-    records = (await async_load_stations(hass))[:3]
+async def test_discovery_skips_stale_missing_failed(nearby_aws_catalog, aws_payload):
+    records = nearby_aws_catalog
     client = TMDAWSClient(AsyncMock(spec=ClientSession), records)
 
     async def fetch(aws_id):
@@ -206,3 +202,125 @@ async def test_discovery_skips_stale_missing_failed(hass, aws_payload):
         pytest.raises(TMDInvalidLocationError),
     ):
         await TMDAWSDiscovery(client).async_nearest(13.75, 100.5)
+
+
+async def test_full_catalog_needs_only_nearest_request(hass, aws_payload):
+    """Cold selection works with all supplied coordinates and no metadata scan."""
+    catalog = await async_load_stations(hass)
+    discovery = TMDAWSDiscovery(TMDAWSClient(AsyncMock(spec=ClientSession), catalog))
+    nearest = catalog[2]
+    payload = deepcopy(aws_payload)
+    payload["data"]["site"].update(
+        AWSID=nearest.aws_id, LAT=nearest.latitude, LON=nearest.longitude
+    )
+    response = parse_aws_response(payload, nearest.aws_id, NOW)
+    progress = []
+    with patch.object(
+        TMDAWSClient, "async_get_station", return_value=response
+    ) as request:
+        assert (
+            await discovery.async_nearest(
+                16.82, 100.27, lambda checked, total: progress.append((checked, total))
+            )
+            == nearest.aws_id
+        )
+        request.assert_awaited_once_with(nearest.aws_id)
+    candidates = discovery.nearby_stations(16.82, 100.27)
+    assert 1 < len(candidates) < len(catalog)
+    assert progress == [(0, len(candidates)), (1, len(candidates))]
+    assert all(distance <= 100 for distance, _ in candidates)
+    assert candidates[0][0] == pytest.approx(
+        distance_km(16.82, 100.27, nearest.latitude, nearest.longitude)
+    )
+
+
+@pytest.mark.parametrize(
+    "failure", ["offline", "empty", "stale", "future", "missing_location", "moved"]
+)
+async def test_nearest_falls_back_after_live_validation(
+    nearby_aws_catalog, aws_payload, failure
+):
+    """Local distance alone never bypasses live health/location validation."""
+    discovery = TMDAWSDiscovery(
+        TMDAWSClient(AsyncMock(spec=ClientSession), nearby_aws_catalog)
+    )
+
+    async def fetch(aws_id):
+        payload = deepcopy(aws_payload)
+        payload["data"]["site"]["AWSID"] = aws_id
+        if aws_id == 1:
+            match failure:
+                case "offline":
+                    payload["data"]["site"]["ONLINE"] = "n"
+                case "empty":
+                    payload["data"]["items"] = []
+                case "stale":
+                    for row in payload["data"]["items"]:
+                        row["yyyy"] = 2025
+                case "future":
+                    for row in payload["data"]["items"]:
+                        row["yyyy"] = 2027
+                case "missing_location":
+                    payload["data"]["site"]["LAT"] = None
+                case "moved":
+                    payload["data"]["site"]["LAT"] = 18.75
+        return parse_aws_response(payload, aws_id, NOW)
+
+    with patch.object(TMDAWSClient, "async_get_station", side_effect=fetch) as request:
+        assert await discovery.async_nearest(13.75, 100.5) == 2
+        assert [call.args[0] for call in request.await_args_list] == [1, 2]
+
+
+async def test_nearest_crosses_region_borders(nearby_aws_catalog, aws_payload):
+    """Region text never excludes a closer station across an administrative border."""
+    records = (
+        nearby_aws_catalog[0],
+        replace(nearby_aws_catalog[1], latitude=13.75, region="Central"),
+    )
+    discovery = TMDAWSDiscovery(TMDAWSClient(AsyncMock(spec=ClientSession), records))
+    payload = deepcopy(aws_payload)
+    with patch.object(
+        TMDAWSClient,
+        "async_get_station",
+        return_value=parse_aws_response(payload, 2, NOW),
+    ) as request:
+        assert await discovery.async_nearest(13.75, 100.5) == 2
+        request.assert_awaited_once_with(2)
+
+
+async def test_equal_distances_have_stable_order(nearby_aws_catalog):
+    records = (
+        replace(nearby_aws_catalog[1], latitude=13.76),
+        nearby_aws_catalog[0],
+    )
+    discovery = TMDAWSDiscovery(TMDAWSClient(AsyncMock(spec=ClientSession), records))
+    assert [record.aws_id for _, record in discovery.nearby_stations(13.75, 100.5)] == [
+        1,
+        2,
+    ]
+
+
+async def test_no_nearby_candidates_never_requests_weather(nearby_aws_catalog):
+    store = AsyncMock()
+    discovery = TMDAWSDiscovery(
+        TMDAWSClient(AsyncMock(spec=ClientSession), nearby_aws_catalog), store
+    )
+    with patch.object(TMDAWSClient, "async_get_station") as request:
+        with pytest.raises(TMDInvalidLocationError):
+            await discovery.async_nearest(0, 0)
+        request.assert_not_awaited()
+        store.async_load.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    "latitude,longitude",
+    [(True, 100.5), (91, 100.5), (13.75, -181), (float("nan"), 100.5)],
+)
+async def test_invalid_search_coordinates(nearby_aws_catalog, latitude, longitude):
+    discovery = TMDAWSDiscovery(
+        TMDAWSClient(AsyncMock(spec=ClientSession), nearby_aws_catalog)
+    )
+    with patch.object(TMDAWSClient, "async_get_station") as request:
+        with pytest.raises(TMDInvalidLocationError):
+            await discovery.async_nearest(latitude, longitude)
+        request.assert_not_awaited()

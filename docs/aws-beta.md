@@ -1,4 +1,4 @@
-# TMD AWS stations beta — 0.5.0b2
+# TMD AWS stations beta — 0.5.0b3
 
 This feature lives on `beta/aws-stations`. It is experimental and does not change
 the stable `main` branch or replace the latest stable GitHub Release. Requires
@@ -11,12 +11,12 @@ The beta uses the same `tmd_weather` domain, so install one copy at a time.
 
 For HACS, add this repository as a custom **Integration** repository using the
 [README instructions](../README.md#installation). Opt in to beta/prerelease
-versions and select **v0.5.0b2** when downloading or redownloading the integration.
+versions and select **v0.5.0b3** when downloading or redownloading the integration.
 The GitHub prerelease is the supported beta version; merely adding the repository
 without selecting the beta continues to install the stable release.
 
 For a manual install, download the [beta branch ZIP](https://github.com/atomiilol/TMD_weather_HomeAssistant/archive/refs/heads/beta/aws-stations.zip)
-or the source ZIP from the `v0.5.0b2` prerelease. Copy the complete
+or the source ZIP from the `v0.5.0b3` prerelease. Copy the complete
 `custom_components/tmd_weather` folder into Home Assistant's `custom_components`
 directory, including its **data** directory. No separate catalog download is
 needed. Restart Home Assistant and refresh the browser/app after installation.
@@ -37,7 +37,8 @@ Choose one of these station-selection methods:
 
 - **Automatic:** defaults to Home Assistant's location from **Settings → System →
   General → Location**. Uncheck **Use Home Assistant location** to specify separate
-  observation search coordinates. The flow checks catalog stations, skips
+  observation search coordinates. The flow sorts nearby catalog stations locally
+  by distance, checks their live data nearest first, skips
   unreachable/offline stations and missing, future or older-than-three-hour
   observations, then offers the nearest usable station within **100 km**.
   Review its number/name before saving.
@@ -71,25 +72,34 @@ selector to a dashboard through the usual entity picker.
 
 ## Discovery and polling
 
-The catalog has no coordinates. A first automatic scan may request each of its
-227 station IDs from `http://122.155.135.49/api/home/site/<AWSID>`. It uses at most
-**four concurrent requests**, a **10-second timeout per request**, and a
-**10-minute overall discovery limit**. The UI displays progress and supports
-cancellation, including how many catalog stations have been checked. Use manual
-selection to avoid a complete discovery scan. A live first scan from the cloud
-development environment took about 3 minutes 18 seconds; network conditions and
-TMD response times determine the actual duration.
+The supplied catalog includes **latitude and longitude for all 227 stations**.
+Automatic selection calculates great-circle distances locally, keeps stations
+within **100 km**, and checks their observations **one at a time, nearest first**
+through `http://122.155.135.49/api/home/site/<AWSID>`. It stops at the first online
+station with usable observations from the last three hours. When that nearest
+candidate is healthy, only **one station request** is needed, even on first setup.
+There is no full-catalog coordinate scan, reverse-geocoding API, or province lookup.
+Stations across region/province borders remain eligible if they are closer.
+The confirmation dropdown lists nearby stations and distances directly from the
+catalog, including alternatives that have not yet been requested.
 
-Station coordinates/status are cached for **six hours** and saved to Home
-Assistant storage, so a restart does not discard an unexpired coordinate cache.
-Later automatic selections reuse that geometry and freshly validate the chosen
-station. Stations already found offline or without usable recent observations
+Each live request has a **10-second timeout**, with a **10-minute overall search
+limit**. The UI reports how many nearby candidates have been considered and
+supports cancellation. Unreachable, offline, empty, stale or future-only responses
+are skipped; live coordinates must also confirm the station is within 100 km.
+Several failed nearby candidates can still make a search slower; network conditions
+and TMD response times determine its duration.
+
+Public station metadata is cached for **six hours** and saved to Home Assistant
+storage. Catalog coordinates remain available regardless of cache expiry or
+restart, and each selected candidate is freshly validated. Stations already found
+offline or without usable recent observations
 are skipped for up to **ten minutes** to avoid immediately repeating slow checks.
 They become eligible for a new check after that short cache expires; fresh live
 evidence from polling or manual selection can clear it sooner. The selected AWSID
 is persisted in the config entry, so normal restarting still polls only that ID.
-Failed endpoints are skipped during discovery; a station whose geometry cannot
-be obtained cannot participate in the nearest-station comparison.
+Existing entries retain their selected AWSID when updating this beta. Reconfigure
+automatic mode to run the new search; normal updates do not search other stations.
 
 Normal AWS updates call only the saved station, **every 10 minutes**. The existing
 configurable fetch interval continues to control NWP/legacy datasets; it does not

@@ -27,7 +27,6 @@ from .api import (
 )
 from .const import (
     AWS_BASE_URL,
-    AWS_DISCOVERY_CONCURRENCY,
     AWS_DISCOVERY_TIMEOUT,
     AWS_MAX_DISTANCE_KM,
     AWS_METADATA_TTL,
@@ -237,7 +236,7 @@ class TMDAWSClient:
 
 
 class TMDAWSDiscovery:
-    """Cache coordinates for setup; normal polling never invokes discovery."""
+    """Rank the supplied coordinates locally and check nearest-station health."""
 
     def __init__(
         self, client: TMDAWSClient, store: Store[dict[str, object]] | None = None
@@ -271,7 +270,7 @@ class TMDAWSDiscovery:
             data = await self.store.async_load()
         except HomeAssistantError, OSError, ValueError:
             _LOGGER.warning(
-                "Unable to restore AWS metadata cache; rediscovering coordinates"
+                "Unable to restore AWS metadata cache; checking candidates without it"
             )
             return
         if not isinstance(data, dict) or not isinstance(
@@ -346,88 +345,68 @@ class TMDAWSDiscovery:
                 "Unable to persist AWS station metadata cache; keeping it in memory"
             )
 
+    def nearby_stations(
+        self, latitude: float, longitude: float
+    ) -> list[tuple[float, TMDAWSStationRecord]]:
+        """Rank all catalog regions without network requests or cached geometry."""
+        if (
+            _numeric(latitude, minimum=-90, maximum=90) is None
+            or _numeric(longitude, minimum=-180, maximum=180) is None
+        ):
+            raise TMDInvalidLocationError("Invalid AWS selection coordinates")
+        candidates = []
+        for record in self.client.catalog:
+            distance = distance_km(
+                latitude, longitude, record.latitude, record.longitude
+            )
+            if distance <= AWS_MAX_DISTANCE_KM:
+                candidates.append((distance, record))
+        return sorted(candidates, key=lambda item: (item[0], item[1].aws_id))
+
     async def async_nearest(
         self,
         latitude: float,
         longitude: float,
         progress: Callable[[int, int], None] | None = None,
     ) -> int:
-        """Bound discovery concurrency, reuse metadata and recheck candidate health."""
-        if (
-            _numeric(latitude, minimum=-90, maximum=90) is None
-            or _numeric(longitude, minimum=-180, maximum=180) is None
-        ):
-            raise TMDInvalidLocationError("Invalid AWS selection coordinates")
+        """Stop after the first nearby station with verified recent observations."""
+        candidates = self.nearby_stations(latitude, longitude)
+        total = len(candidates)
+        if progress:
+            progress(0, total)
+        if not candidates:
+            raise TMDInvalidLocationError("No catalog AWS station within 100 km")
         async with self.lock, asyncio.timeout(AWS_DISCOVERY_TIMEOUT):
             await self._async_load_cache()
-            fresh: dict[int, TMDAWSResponse] = {}
-            semaphore = asyncio.Semaphore(AWS_DISCOVERY_CONCURRENCY)
-            checked = 0
-            total = len(self.client.catalog)
-            if progress:
-                progress(checked, total)
-
-            def checked_station() -> None:
-                nonlocal checked
-                checked += 1
-                if progress:
-                    progress(checked, total)
-
-            async def discover(record: TMDAWSStationRecord) -> None:
-                if (cached := self.cache.get(record.aws_id)) and monotonic() - cached[
-                    0
-                ] < AWS_METADATA_TTL:
-                    checked_station()
-                    return
-                async with semaphore:
+            try:
+                for checked, (_, record) in enumerate(candidates, start=1):
+                    aws_id = record.aws_id
                     try:
-                        response = await self.client.async_get_station(record.aws_id)
-                    except TMDAPIError:
-                        return
+                        if monotonic() < self._unusable_until.get(aws_id, 0):
+                            continue
+                        try:
+                            response = await self.client.async_get_station(aws_id)
+                        except TMDAPIError:
+                            continue
+                        self.note_response(aws_id, response)
+                        # Confirm the live location is still near the user.
+                        status = response.status
+                        if (
+                            status.latitude is None
+                            or status.longitude is None
+                            or distance_km(
+                                latitude, longitude, status.latitude, status.longitude
+                            )
+                            > AWS_MAX_DISTANCE_KM
+                        ):
+                            continue
+                        if response.available(datetime.now(UTC)):
+                            return aws_id
                     finally:
-                        checked_station()
-                    self.cache[record.aws_id] = (monotonic(), response.status)
-                    fresh[record.aws_id] = response
-                    self._record_health(record.aws_id, response)
-
-            await asyncio.gather(*(discover(record) for record in self.client.catalog))
-            await self._async_save_cache()
-            candidates = []
-            for record in self.client.catalog:
-                if not (cached := self.cache.get(record.aws_id)):
-                    continue
-                status = cached[1]
-                if status.latitude is None or status.longitude is None:
-                    continue
-                distance = distance_km(
-                    latitude, longitude, status.latitude, status.longitude
-                )
-                if distance <= AWS_MAX_DISTANCE_KM:
-                    candidates.append((distance, record.aws_id))
-            for _, aws_id in sorted(candidates):
-                if monotonic() < self._unusable_until.get(aws_id, 0):
-                    continue
-                try:
-                    response = fresh.get(aws_id) or await self.client.async_get_station(
-                        aws_id
-                    )
-                except TMDAPIError:
-                    continue
-                self.cache[aws_id] = (monotonic(), response.status)
-                self._record_health(aws_id, response)
-                # Recheck coordinates too: a station's metadata can change.
-                status = response.status
-                if (
-                    status.latitude is None
-                    or status.longitude is None
-                    or distance_km(
-                        latitude, longitude, status.latitude, status.longitude
-                    )
-                    > AWS_MAX_DISTANCE_KM
-                ):
-                    continue
-                if response.available(datetime.now(UTC)):
-                    return aws_id
+                        if progress:
+                            progress(checked, total)
+            finally:
+                await self._async_save_cache()
         raise TMDInvalidLocationError("No usable recent AWS station within 100 km")
 
 

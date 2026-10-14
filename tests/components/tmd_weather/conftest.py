@@ -194,6 +194,23 @@ def aws_payload():
 
 
 @pytest.fixture
+async def nearby_aws_catalog(hass):
+    """Three synthetic nearby coordinates; retain supplied station IDs/names."""
+    from dataclasses import replace
+
+    from custom_components.tmd_weather.stations import async_load_stations
+
+    records = tuple(
+        replace(record, latitude=13.75 + record.aws_id * 0.01, longitude=100.5)
+        for record in (await async_load_stations(hass))[:3]
+    )
+    with patch(
+        "custom_components.tmd_weather.aws.async_load_stations", return_value=records
+    ):
+        yield records
+
+
+@pytest.fixture
 def mock_aws_client(aws_payload):
     """Mock station HTTP, retaining real catalog, parsing and discovery."""
     from copy import deepcopy

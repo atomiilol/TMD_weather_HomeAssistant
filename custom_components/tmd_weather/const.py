@@ -36,7 +36,6 @@ AWS_UPDATE_INTERVAL: Final = timedelta(minutes=10)
 AWS_STALE_AFTER: Final = timedelta(hours=3)
 AWS_METADATA_TTL: Final = 6 * 3600
 AWS_UNUSABLE_CACHE_TTL: Final = 10 * 60
-AWS_DISCOVERY_CONCURRENCY: Final = 4
 AWS_DISCOVERY_TIMEOUT: Final = 600
 AWS_MAX_DISTANCE_KM: Final = 100
 NWP_BASE_URL: Final = "https://data.tmd.go.th/nwpapi/v1"

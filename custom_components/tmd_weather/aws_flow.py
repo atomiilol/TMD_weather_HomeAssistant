@@ -17,7 +17,6 @@ import probatio
 from .api import TMDAPIError, TMDInvalidLocationError
 from .aws import async_aws_discovery
 from .const import (
-    AWS_MAX_DISTANCE_KM,
     AWS_SOURCE,
     CONF_AWS_LATITUDE,
     CONF_AWS_LONGITUDE,
@@ -26,7 +25,6 @@ from .const import (
     CONF_AWS_USE_HA_LOCATION,
     CONF_CURRENT_SOURCE,
 )
-from .observations import distance_km
 from .stations import (
     TMDStationDatabaseError,
     get_regions,
@@ -201,7 +199,7 @@ class AWSStationSelectionFlow(ConfigFlow):
     async def async_step_aws_discover(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Use HA's cancellable progress task for the bounded first discovery scan."""
+        """Use HA's cancellable progress task to check nearest candidates."""
         if self._aws_task is not None and self._aws_task.done():
             try:
                 self._aws_pending[CONF_AWS_STATION_ID] = self._aws_task.result()
@@ -222,9 +220,8 @@ class AWSStationSelectionFlow(ConfigFlow):
                 self._aws_checked, self._aws_total = checked, total
                 if self._aws_task is not None and self._aws_task.cancelling():
                     return
-                if checked % 8 == 0 or checked == total:
-                    self.async_update_progress(checked / total if total else 0)
-                    self.async_notify_flow_changed()
+                self.async_update_progress(checked / total if total else 0)
+                self.async_notify_flow_changed()
 
             self._aws_task = self.hass.async_create_task(
                 service.async_nearest(
@@ -256,23 +253,14 @@ class AWSStationSelectionFlow(ConfigFlow):
         record = get_station_by_id(self._aws_pending[CONF_AWS_STATION_ID])
         assert record is not None
         service = await async_aws_discovery(self.hass)
-        choices = {record.aws_id: f"{record.number} — {record.name}"}
-        for station in service.client.catalog:
-            if not (cached := service.cache.get(station.aws_id)):
-                continue
-            status = cached[1]
-            if status.latitude is None or status.longitude is None:
-                continue
-            distance = distance_km(
+        choices = {
+            station.aws_id: f"{station.number} — {station.name} ({distance:.1f} km)"
+            for distance, station in service.nearby_stations(
                 self._aws_pending[CONF_AWS_LATITUDE],
                 self._aws_pending[CONF_AWS_LONGITUDE],
-                status.latitude,
-                status.longitude,
             )
-            if distance <= AWS_MAX_DISTANCE_KM:
-                choices[station.aws_id] = (
-                    f"{station.number} — {station.name} ({distance:.1f} km)"
-                )
+        }
+        choices.setdefault(record.aws_id, f"{record.number} — {record.name}")
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
